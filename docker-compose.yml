@@ -1,0 +1,19 @@
+# Mapa domácí sítě na NAS (docs/nas.md).
+# Ve složce s tímto souborem leží server/, ukazka/, www/ (mapa.html), config/ a data/.
+services:
+  netmap:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: netmap
+    restart: unless-stopped
+    network_mode: host          # kvůli ARP skenu (nmap vidí MAC jen ve vlastní síti); port je PORT níže
+    cap_add: [NET_RAW, NET_ADMIN]
+    environment:
+      PORT: 8780
+      TZ: Europe/Prague
+      # SCAN_NETS: 192.168.1.0/24   # co skenovat; bez toho síť serveru (/24)
+    volumes:
+      - ./www:/app/www:ro       # nová verze editoru = přepsat www/mapa.html, bez přestavby
+      - ./data:/app/data
+      - ./config:/app/config

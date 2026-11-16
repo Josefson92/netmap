@@ -1,0 +1,11 @@
+# tabulka firewallu do repozitare nepatri
+*.xlsx
+~$*
+
+# skutecna data site zustavaji jen lokalne (ukazka je ve slozce ukazka/)
+data/
+
+# na NAS: kopie editoru, účet a relace serveru
+www/
+config/
+__pycache__/
