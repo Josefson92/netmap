@@ -68,16 +68,22 @@ h4{color:var(--mu);font-size:11px;text-transform:uppercase;margin-top:12px}
 .menu label,.menu>button{display:flex;gap:6px;align-items:center;padding:4px 6px;border:1px solid transparent;border-radius:5px;background:none;text-align:left;cursor:pointer;white-space:nowrap}
 .menu label:hover,.menu>button:hover{background:var(--bg);border-color:var(--bd)}
 .menu label .mini{margin-left:auto}
-#ly,#fl{display:grid;gap:1px}
-/* nabídka pater: barevná tečka patra */
+#ly,#vlF,#arF{display:grid;gap:1px}
+/* barevná tečka sítě VLAN / patra */
 .fdot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:0}
-
-/* ---------- prvky jen pro jeden režim: .pl = jen Půdorys, .tp = jen Topologie ---------- */
-.pl{display:none}
-body[data-mode=plan] .pl{display:inline-block}
-body[data-mode=plan] .tp{display:none}
-.menu .pl{display:none}
-body[data-mode=plan] .menu .pl{display:flex}
+/* okno Zobrazení: sloupce Vrstvy, VLAN, Prostory, Popisky; umístí ho vwPlace pod tlačítko */
+.bdg{display:inline-block;min-width:16px;padding:0 4px;border-radius:8px;background:#d97706;color:#fff;font-size:11px;line-height:16px;text-align:center}
+#vwM{position:fixed;width:max-content;max-width:calc(100vw - 16px);max-height:calc(100dvh - 90px);overflow:auto;padding:8px 10px}
+.vwh{display:flex;gap:6px;align-items:center;padding:0 4px 6px;border-bottom:1px solid var(--bd)}
+.vwh span{flex:1;font-weight:700}
+.vwh button:disabled{opacity:.4;cursor:default}
+.vwg{display:grid;grid-auto-flow:column;grid-auto-columns:max-content;gap:0 18px;align-items:start}
+.vwg>section:not([hidden]){display:grid;gap:1px;align-content:start}
+#arF{max-height:min(60vh,520px);overflow:auto}
+#arF label.off{opacity:.5}
+#arF small{color:var(--mu)}
+.arm{margin:0 4px 4px}
+.arm button{padding:1px 8px;font-size:12px}
 
 /* ---------- levá paleta ---------- */
 #pal button{display:block;width:100%;margin:1px 0;text-align:left;background:none;border-color:transparent}
@@ -86,14 +92,12 @@ body[data-mode=plan] .menu .pl{display:flex}
 
 /* ---------- plocha (SVG) ---------- */
 #cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
-body[data-tool=area] #cv{cursor:crosshair}
 text{user-select:none;pointer-events:none;text-anchor:middle}
-.tmp,.ab,.grid,.jn{pointer-events:none}
+.tmp,.jn{pointer-events:none}
 [data-l]{cursor:pointer}
-/* zařízení (bublina): .fr kroužek patra, .mb odznak mesh role; popisky mají lem v barvě pozadí, takže přeruší čáry */
+/* zařízení (bublina): .fr kroužek sítí VLAN, .mb odznak mesh role; popisky mají lem v barvě pozadí, takže přeruší čáry */
 .nd{cursor:move}
-body.locked .nd,body.locked .at{cursor:pointer}
-body.locked .ah{display:none}
+body.locked .nd{cursor:pointer}
 body.locked #pal button[data-t]{opacity:.45;cursor:not-allowed}
 .nd circle{fill:var(--nd);stroke:var(--bd);stroke-width:2}
 .nd.sel circle{stroke:var(--ac);stroke-width:3}
@@ -105,6 +109,18 @@ body.locked #pal button[data-t]{opacity:.45;cursor:not-allowed}
 .nm{font-size:12px;font-weight:600;fill:var(--tx)}
 .ip{font-size:10px;fill:var(--mu)}
 .nm,.ip{paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round}
+.nm.hl,.ip.hl{fill:var(--bg);stroke-width:9px}
+.wlh{pointer-events:none}
+.wlh text{text-anchor:start;font-size:12px;fill:var(--mu);paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round}
+.wlh .wn{font-weight:600;fill:var(--tx)}
+/* rámečky skupin: zařízení s kabelovým podstromem, Wi-Fi skupina; okraj a štítek jdou chytit a táhnout */
+.gfr{fill:none;stroke:var(--mu);stroke-opacity:.45;stroke-width:1.2}
+.gfl{text-anchor:start;font-size:11px;font-weight:600;fill:var(--mu);paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round;pointer-events:none}
+.gfh{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke;cursor:move}
+.gft{fill:transparent;cursor:move}
+.gf:hover .gfr,.gf.on .gfr{stroke:var(--ac);stroke-opacity:.9;stroke-width:1.6}
+.gf:hover .gfl,.gf.on .gfl{fill:var(--ac)}
+body.locked .gfh,body.locked .gft{cursor:pointer}
 /* spoje: ⚡ u napájení, USB, popisek spoje, štítek portu */
 .pw{font-size:13px;text-anchor:middle;paint-order:stroke;stroke:var(--bg);stroke-width:3;pointer-events:none}
 .um{font-size:8px;font-weight:700;stroke-width:4}
@@ -118,23 +134,8 @@ body.locked #pal button[data-t]{opacity:.45;cursor:not-allowed}
 .pbg{cursor:pointer}
 .pbg rect{fill:var(--pn);stroke-width:1.5}
 .pbg text{font-size:9px;font-weight:600;fill:var(--tx)}
-/* prostory: .ab obrys, .at/.an štítek, .ah úchyt velikosti; druhy k-bld/k-out; .fl obarvené patrem, .off skryté patro */
-.ab{fill:rgba(37,99,235,.05);stroke:var(--mu);stroke-width:1.5}
-.k-bld .ab{fill:none;stroke:var(--tx);stroke-width:3}
-.k-out .ab{fill:rgba(22,163,74,.07);stroke:#16a34a;stroke-dasharray:8 5}
-.at{fill:var(--pn);stroke:var(--bd);cursor:move}
-.an{font-size:12px;font-weight:600;fill:var(--tx)}
-.ah{fill:var(--ac);opacity:.5;cursor:nwse-resize}
-.ar.sel .ab{stroke:var(--ac)}
-.ar.sel .at{stroke:var(--ac)}
-.ar.fl .ab{fill:color-mix(in srgb,var(--fc) 7%,transparent);stroke:var(--fc);stroke-width:2.5}
-.ar.fl .at{fill:var(--fc);stroke:var(--fc)}
-.ar.fl .an{fill:#fff}
-.ar.fl.off .ab{fill:none;stroke-dasharray:10 6;opacity:.45}
-.ar.fl.off .at{fill:var(--pn);cursor:pointer}
-.ar.fl.off .an{fill:var(--mu)}
-.ar.fl.off [data-flon]{cursor:pointer}
-
+.pbg.dm rect{stroke-opacity:.25}
+.pbg.dm text{opacity:.25}
 /* ---------- panel vlastností ---------- */
 #props label{display:block;margin:7px 0 2px;color:var(--mu);font-size:11px}
 #props input,#props select,#props textarea{width:100%;margin-top:2px}
@@ -169,9 +170,24 @@ body.wide .lr-pg{grid-template-columns:130px 1fr 100px 100px 150px 64px;grid-tem
 .lr-pg>:nth-child(5){grid-area:v}
 .lr-pg>:nth-child(6){grid-area:x}
 #props .lr select.vs{border-left:4px solid var(--vc)}
-/* přehled sítí u routeru: síť → porty a SSID */
-.vsm{margin-top:4px;font-size:12px;line-height:1.6}
-.vsm .vc{margin-right:4px}
+/* přehled sítí u routeru: tabulka síť | Wi-Fi | porty, řádky oddělené čarou */
+.vsm{display:grid;grid-template-columns:auto auto minmax(0,1fr);margin-top:4px;font-size:12px;line-height:1.5}
+.vsm>*{padding:4px 10px 4px 0;border-top:1px solid var(--bd)}
+.vsm .vss,.vsm .vsd{white-space:nowrap}
+.vsm .vsi{display:none}
+/* úzký panel: Wi-Fi a porty pod sebou vedle štítku sítě */
+@media(min-width:801px){
+  body:not(.wide) .vsm{grid-template-columns:auto minmax(0,1fr)}
+  body:not(.wide) .vsm>.vs2{grid-row:span 2}
+  body:not(.wide) .vsm>.vsh:nth-child(3),body:not(.wide) .vsm>.vs0{display:none}
+  body:not(.wide) .vsm>.vss{padding-bottom:0}
+  body:not(.wide) .vsm>.vss:not(.vs0)+.vsp{border-top:0}
+  body:not(.wide) .vsm .vsi{display:inline}
+}
+.vsm>.vsh{border-top:0;padding-bottom:2px;color:var(--mu);font-size:11px}
+.vsm .vc{white-space:nowrap}
+.vsm b{font-weight:600}
+.vsm i{font-style:normal;color:var(--mu);font-size:11px}
 #props .lr input,#props .lr select{margin:0;padding:3px 4px;min-width:0}
 .lr button{padding:2px 0}
 /* VLAN: --vc barva sítě; .vc štítek členství, proužek u řádku sítě routeru */
@@ -218,11 +234,11 @@ body.wide .vt .f{display:inline}
 .ov{color:#dc2626}
 
 /* ---------- firewall: velké okno (dialog) otevírané z panelu routeru ---------- */
-#fwDlg,#scDlg,#bkDlg{width:min(1500px,96vw);height:min(900px,92vh);padding:0;border:1px solid var(--bd);border-radius:10px;background:var(--pn);color:var(--tx);box-shadow:0 12px 40px rgba(0,0,0,.3)}
-#fwDlg[open],#scDlg[open],#bkDlg[open]{display:flex;flex-direction:column}
-#fwDlg::backdrop,#scDlg::backdrop,#bkDlg::backdrop{background:rgba(0,0,0,.4)}
+#fwDlg,#scDlg,#bkDlg,#arDlg{width:min(1500px,96vw);height:min(900px,92vh);padding:0;border:1px solid var(--bd);border-radius:10px;background:var(--pn);color:var(--tx);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+#fwDlg[open],#scDlg[open],#bkDlg[open],#arDlg[open]{display:flex;flex-direction:column}
+#fwDlg::backdrop,#scDlg::backdrop,#bkDlg::backdrop,#arDlg::backdrop{background:rgba(0,0,0,.4)}
 .fwh{display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--bd)}
-#fwB,#scB{flex:1;overflow:auto;padding:8px 10px}
+#fwB,#scB,#arB{flex:1;overflow:auto;padding:8px 10px}
 #fwB textarea{width:100%;height:calc(100% - 30px);resize:none;font:12px/1.5 ui-monospace,monospace}
 .fwt{border-collapse:collapse;width:100%;table-layout:fixed;margin-top:6px}
 .fwt th{position:sticky;top:-8px;z-index:1;background:var(--pn);color:var(--mu);font-size:11px;font-weight:600;text-align:left;padding:4px 3px;border-bottom:1px solid var(--bd)}
@@ -248,6 +264,15 @@ body.wide .vt .f{display:inline}
 .sct .df{color:#d97706;font-weight:600}
 .sct a{color:inherit}
 .sct .act{white-space:nowrap;text-align:right}
+
+/* ---------- prostory: strom v okně, řádek = druh, název, barva patra, počet zařízení, akce; odsazení podle hloubky --h ---------- */
+#arDlg{width:min(860px,96vw)}
+.arr{display:grid;grid-template-columns:minmax(120px,170px) minmax(120px,1fr) 34px 70px auto;gap:6px;align-items:center;padding:2px 0 2px calc(var(--h,0) * 24px);border-bottom:1px solid var(--bd)}
+.arr input,.arr select{min-width:0;padding:3px 4px}
+.arr input[type=color]{width:30px;height:26px;padding:0 2px}
+.arh{position:sticky;top:-8px;z-index:1;background:var(--pn);color:var(--mu);font-size:11px;font-weight:600}
+.arc{text-align:right}
+@media (max-width:800px){.arr{grid-template-columns:110px minmax(90px,1fr) 30px 46px;padding-left:calc(var(--h,0) * 12px)}.arr .fwa{grid-column:1/-1;text-align:right}}
 
 /* ---------- zálohy: vlevo seznam záloh, vpravo porovnání vybrané se současnou verzí ---------- */
 #bkDlg{width:min(1000px,96vw)}
@@ -310,6 +335,10 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
   #qs{min-width:0;width:110px}
   /* nabídky by v posuvné hlavičce byly oříznuté, proto jsou přes celou šířku pod ní */
   .dd .menu{position:fixed;top:44px;left:8px;right:8px;max-height:70dvh;overflow:auto}
+  /* okno Zobrazení přes celou obrazovku, sekce pod sebou */
+  #ddView #vwM{inset:0!important;width:auto;max-width:none;max-height:none;border-radius:0;z-index:40;padding:10px 14px}
+  .vwg{grid-auto-flow:row;grid-auto-columns:auto}
+  #arF{max-height:none}
   /* plovoucí tlačítka nad stavovým řádkem: ＋ paleta vlevo, ⓘ panel vlastností vpravo */
   .fab{display:block!important;position:fixed;z-index:25;bottom:36px;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;background:var(--pn);box-shadow:0 2px 10px rgba(0,0,0,.3)}
   #mbPal{left:12px}
@@ -333,7 +362,7 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
 }
 </style>
 </head>
-<body data-mode="topo">
+<body>
 <header>
  <button id="bObjs" title="Zpět na přehled objektů (domů)" hidden>← Objekty</button>
  <b id="hT">🗺️ Mapa sítě</b>
@@ -351,39 +380,35 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
   </div></details>
  </span>
  <span class="sep"></span>
- <span class="seg"><button id="mTopo" class="on">🔗 Topologie</button><button id="mPlan">🏠 Půdorys</button></span>
- <details class="dd" id="ddFl" hidden><summary class="btn" id="flSum" title="Která patra se mají na mapě zobrazit">🏢 Patra ▾</summary><div class="menu">
-  <h4>Patra <button id="flAll" class="mini" title="Zobrazit všechna patra">vše</button></h4>
-  <div id="fl"></div>
+ <button id="bAr" title="Prostory: dům, patra, místnosti a kde je které zařízení">🏠 Prostory</button>
+ <details class="dd" id="ddView"><summary class="btn" id="vwSum" title="Co se má na mapě zobrazit: vrstvy, sítě VLAN, prostory, popisky">👁 Zobrazení ▾</summary><div class="menu" id="vwM">
+  <div class="vwh"><span>Zobrazení</span><button id="vwReset" class="mini" title="Zapnout všechny vrstvy, sítě a prostory">↺ Vše zpět</button><button id="vwX" class="mini" title="Zavřít">✕</button></div>
+  <div class="vwg">
+   <section><h4>Vrstvy <button id="lyAll" class="mini" title="Zapnout všechny vrstvy">vše</button></h4><div id="ly" title="Zařízení jen se spoji ve vypnutých vrstvách se schovají"></div></section>
+   <section id="vwVl" hidden><h4>VLAN <button id="vlAll" class="mini" title="Zobrazit všechny sítě">vše</button></h4><div id="vlF" title="Zařízení se schová, když jsou všechny jeho sítě vypnuté (switch s více sítěmi zůstane, dokud je některá zapnutá)"></div></section>
+   <section id="vwAr" hidden><h4>Prostory <button id="arAll" class="mini" title="Zapnout všechny prostory">vše</button></h4><div id="arF"></div></section>
+   <section><h4>Popisky</h4>
+    <label><input type="checkbox" id="cLL"> popisky spojů</label>
+    <label title="Čísla portů u konců spojů"><input type="checkbox" id="cPB" checked> porty</label>
+    <label title="Rámeček kolem routeru, switche nebo AP s jeho kabelovým podstromem a kolem Wi-Fi skupiny; tažením za okraj nebo štítek se posune celá skupina"><input type="checkbox" id="cGF"> rámečky skupin</label>
+   </section>
+  </div>
  </div></details>
  <span class="sep"></span>
  <span class="grp">
   <button id="bLink" title="Spojovat: táhni od zařízení k zařízení (nebo Shift+táhni)">🔗 Spojovat</button>
-  <button id="bArea" class="pl" title="Nakreslit prostor: táhni na ploše (budova, místnost, kůlna…)">▭ Prostor</button>
-  <button id="bLay" class="tp" title="Automaticky uspořádat do stromu">🧭 Uspořádat</button>
+  <button id="bLay" title="Automaticky uspořádat do stromu">🧭 Uspořádat</button>
   <button id="bFit" title="Přizpůsobit pohled (F)">⤢</button>
   <button id="bLock"></button>
   <button id="bEdit" class="on" title="Odemkne mapu k úpravám; uložit ji pak jde do složky 📁 nebo jako nový soubor (⋯ → 🌐 Export HTML)" hidden>✎ Upravit</button>
-  <button id="bSch" title="Spoje jako elektrické schéma: kmen z rodiče, uzel, sběrnice a hrábě k zařízením (zvlášť pro Topologii a Půdorys)">📐 Schéma</button>
+  <button id="bSch" title="Spoje jako elektrické schéma: kmen z rodiče, uzel, sběrnice a hrábě k zařízením">📐 Schéma</button>
  </span>
- <details class="dd" id="ddVl" hidden><summary class="btn" id="vlBtn" title="Zařízení kterých sítí VLAN se mají na mapě zobrazit">🏷 VLAN ▾</summary><div class="menu">
-  <h4>VLANy <button id="vlAll" class="mini" title="Zobrazit všechny sítě">vše</button></h4>
-  <div id="vlF" title="Zařízení se schová, když jsou všechny jeho sítě vypnuté (switch s více sítěmi zůstane, dokud je některá zapnutá)"></div>
- </div></details>
- <details class="dd" id="ddLy"><summary class="btn" id="lySum" title="Vrstvy a co se má na mapě zobrazit">🗂 Vrstvy ▾</summary><div class="menu">
-  <h4>Vrstvy <button id="lyAll" class="mini" title="Zapnout všechny vrstvy">vše</button></h4>
-  <div id="ly" title="Zařízení jen se spoji ve vypnutých vrstvách se schovají"></div>
-  <h4>Zobrazit</h4>
-  <label><input type="checkbox" id="cLL"> popisky spojů</label>
-  <label title="Čísla portů u konců spojů"><input type="checkbox" id="cPB" checked> porty</label>
-  <label class="pl"><input type="checkbox" id="cPL" checked> spoje v půdorysu</label>
- </div></details>
  <span class="sp"></span>
  <button id="bTheme"></button>
  <input id="qs" type="search" placeholder="🔍 hledat (název, IP, místnost…)" size="22">
 </header>
 <aside id="pal"></aside>
-<main><svg id="cv"><defs><clipPath id="bubClip"><circle r="23"/></clipPath><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--gr)"/></pattern></defs><g id="vp"></g></svg></main>
+<main><svg id="cv"><defs><clipPath id="bubClip"><circle r="23"/></clipPath></defs><g id="vp"></g></svg></main>
 <aside id="props"></aside>
 <button id="mbX" title="Zavřít panel">✕</button>
 <button id="mbPal" class="fab" title="Přidat zařízení a legenda spojů">＋</button>
@@ -420,6 +445,10 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
 <dialog id="bkDlg">
  <div class="fwh"><b>🕘 Zálohy na NAS</b><span class="sp"></span><button id="bkX" title="Zavřít (Esc)">✕</button></div>
  <div id="bkB"><div id="bkL"></div><div id="bkD"></div></div>
+</dialog>
+<dialog id="arDlg">
+ <div class="fwh"><b>🏠 Prostory</b><span class="sp"></span><button id="arAdd" title="Nový prostor na nejvyšší úrovni (dům, kůlna, zahrada)">＋ Prostor</button><button id="arX" title="Zavřít (Esc)">✕</button></div>
+ <div id="arB"></div>
 </dialog>
 <dialog id="fwDlg">
  <div class="fwh"><b>🛡 Firewall</b><span class="seg" id="fwTabs"></span><span class="sp"></span><button id="fwCsv" title="Stáhne aktuální tabulku jako CSV (otevře se v Excelu)">⬇ CSV</button><button id="fwX" title="Zavřít (Esc)">✕</button></div>
@@ -573,13 +602,12 @@ const ICG = [
 
 <script>
 // =====================================================================================
-//  Mapa domácí sítě: editor topologie a půdorysu (vanilla JS + SVG, bez závislostí).
+//  Mapa domácí sítě: editor topologie (vanilla JS + SVG, bez závislostí).
 //  Hlavní stav:
-//    D       data sítě {v, devices:[zařízení], links:[spoje]}        → data/network.json
-//    PT, PQ  pozice zařízení {id: [x, y]} v Topologii a v Půdorysu    → data/layout.json
-//    A       prostory půdorysu [{id, n, k, x, y, w, h, lvl, fc}]       → data/layout.json
-//    VS      pohled {x, y, k (zoom), sch (schéma)} zvlášť pro topo a plan
-//    P, V    aliasy na PT/PQ a VS[mode] pro aktuální režim (alias())
+//    D       data sítě {v, devices:[zařízení], links:[spoje], areas:[prostory], fw}  → data/network.json
+//    PT      pozice zařízení {id: [x, y]}                                         → data/layout.json
+//    VS      pohled {x, y, k (zoom), sch (schéma)} (VS.topo)
+//    P, V, W aliasy na PT, VS.topo a WT (alias())
 //  Zvyklosti v kódu: d = zařízení, l = spoj, a = prostor, f = podlaží (jeho název),
 //  p/pt = bod [x, y], o = pole s kousky HTML/SVG, které se nakonec spojí.
 // =====================================================================================
@@ -642,8 +670,8 @@ const L = {
 };
 
 const WAN = ['FTTH (GPON)', 'FTTH (AON/ethernet)', 'VDSL', 'ADSL', 'Kabel (DOCSIS)', 'LTE', '5G', 'Starlink / satelit', 'Bezdrátový ISP', 'Jiné'];
-// druhy prostorů v půdorysu
-const AK = {room: 'Místnost', bld: 'Budova (dům, kůlna, garáž)', out: 'Venku (zahrada, dvůr)'};
+// druhy prostorů: [ikona, název]; patro (flr) je úroveň stromu prostorů, zařízení pod ním patří do patra
+const AK = {bld: ['🏠', 'Budova (dům, kůlna, garáž)'], flr: ['🏢', 'Podlaží'], room: ['🚪', 'Místnost'], out: ['🌳', 'Venku (zahrada, dvůr)']};
 // barvy pater (podle pořadí podlaží)
 const FC = ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#0891b2', '#65a30d', '#dc2626'];
 // mesh role AP/routeru
@@ -659,16 +687,16 @@ const PRC = {WAN: 'wan', [PRL[1]]: 'lin', Uplink: 'upl', Správa: 'mgm'};
 // Popisky polí v panelu vlastností
 const FL = {
   n: 'Název', model: 'Výrobce / model', ip: 'IP adresa', mac: 'MAC / IEEE adresa', sn: 'Sériové číslo (SN)', room: 'Místnost / umístění',
-  vlan: 'VLAN', ssid: 'SSID',
+  vlan: 'VLAN', ssid: 'SSID', bands: 'Umí pásma (prázdné = vše, co vysílá SSID)',
   pg: 'Skupiny portů (role · čísla portů · rychlost · PoE · síť)',
   poew: 'PoE rozpočet (W)', w: 'PoE odběr (W)', chan: 'Kanál',
   wan: 'Typ přípojky', isp: 'Poskytovatel', down: 'Download (Mb/s)', up: 'Upload (Mb/s)', pubip: 'Veřejná IP / CGNAT',
   va: 'Výkon (VA / W)', bat: 'Výdrž na baterii (min)', outl: 'Počet zásuvek', joule: 'Absorpce přepětí (J)',
   note: 'Poznámka', vlans: 'VLANy (ID · název · podsíť)', ssids: 'Wi-Fi sítě (SSID · pásmo · VLAN)',
-  pp: 'Osazené porty (0–50)', mrole: 'Mesh role', band: 'Pásmo páteře', rate: 'Rychlost / signál (např. 866 Mb/s, −58 dBm)', lvl: 'Podlaží',
+  pp: 'Osazené porty (0–50)', mrole: 'Mesh role', band: 'Pásmo páteře', rate: 'Rychlost / signál (např. 866 Mb/s, −58 dBm)',
 };
 // Pole s výběrem z pevného seznamu
-const SELECT_F = {wan: WAN, mrole: MR, band: BANDS};
+const SELECT_F = {wan: WAN, mrole: MR, band: BANDS, bands: BANDS};
 // Seznamová pole: klíč: [[vlastnost, placeholder, volby pro select (nepovinné, pole nebo funkce)]]
 // Síť skupiny portů (v) = netagovaná VLAN všech jejích portů; volby jsou sítě routeru (vlOpts je definovaná níž)
 const LF = {
@@ -707,7 +735,7 @@ const g10 = v => Math.round(v / 10) * 10;  // mřížka 10 px
 const nextId = (arr, prefix) => prefix + (Math.max(0, ...arr.map(x => +x.id.slice(prefix.length) || 0)) + 1);
 const byId = id => D.devices.find(d => d.id == id);
 const lnk = id => D.links.find(l => l.id == id);
-const area = id => A.find(a => a.id == id);
+const area = id => id ? D.areas.find(a => a.id == id) : undefined;
 const nm = d => d ? (d.n || d.id) : '?';
 const lType = t => L[t] || L.other;
 const isWl = t => !!lType(t)[3];          // bezdrátový spoj
@@ -715,11 +743,6 @@ const isPw = t => /^pwr/.test(t);         // napájecí spoj (pwr, pwrdc)
 // localStorage, které nesmí shodit aplikaci (soukromé okno, zablokované úložiště)
 const lsGet = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) || def; } catch { return def; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-// prostory: bod uvnitř, střed, řazení podle plochy
-const inA = (a, p) => p && p[0] >= a.x && p[0] <= a.x + a.w && p[1] >= a.y && p[1] <= a.y + a.h;
-const aCtr = a => [a.x + a.w / 2, a.y + a.h / 2];
-const bySz = (x, y) => x.w * x.h - y.w * y.h;   // nejmenší první
-const bySzDesc = (x, y) => bySz(y, x);          // největší první
 // seznam portů zkrácený na rozsahy: 1,2,3,5 → „1–3,5“
 function ranges(a) {
   const o = [];
@@ -755,38 +778,42 @@ const SRC0 = (() => {
 })();
 let viewOnly = !!EMB;
 const lsK = (k, o = OID || (EMB ? '~html' : '')) => o ? k + '@' + o : k;
-const OBJ_KEYS = ['netmap', 'netmapRev', 'netmapDirty', 'netmapBase', 'netmapVl', 'netmapFl'];
+const OBJ_KEYS = ['netmap', 'netmapRev', 'netmapDirty', 'netmapBase', 'netmapVl', 'netmapAr'];
 
-let D = {v: 2, devices: [], links: []}, PT = {}, PQ = {}, A = [];
-let VS = {topo: {x: 0, y: 0, k: 1}, plan: {x: 0, y: 0, k: 1}}, mode = 'topo', P = PT, V = VS.topo;
-// ruční polohy čar schématu (tažení myší) pro topo/plan, alias W; klíč = skupina hrábí (rodič|směr|typ) + část:
+let D = {v: 3, devices: [], links: [], areas: []}, PT = {};
+let VS = {topo: {x: 0, y: 0, k: 1}}, P = PT, V = VS.topo;
+// ruční polohy čar schématu (tažení myší), alias W; klíč = skupina hrábí (rodič|směr|typ) + část:
 // |b = odstup sběrnice od rodiče, |k = posun kmene od středu rodiče, |id spoje = posun zubu od středu potomka
-let WT = {}, WQ = {}, W = WT;
+let WT = {}, W = WT;
 let SCH = {};             // trasy schématu z posledního vykreslení (schRoutes().R), pro tažení čar
 let theme = lsGet('netmapTheme', '');            // barevný režim: '' = podle systému, 'light', 'dark'
 let locked = lsGet('netmapLock', 0);              // 🔒 zamčená mapa: nic se nepohne, jen výběr a úpravy v panelu
-let sel = null;           // výběr {k: 'd' | 'l' | 'a', id}
-let tool = null;          // nástroj 'link' | 'area' | null
+let sel = null;           // výběr {k: 'd' | 'l', id}
+let tool = null;          // nástroj 'link' | null
 let drag = null;          // rozpracované tažení myší, viz onPointerDown
 let undo = [];            // snímky pro Ctrl+Z
 let lastLT = 'cat6';      // naposledy zvolený typ spoje, výchozí pro odhad
-let showLL = false, showPB = true, showPL = true;  // popisky spojů, štítky portů, spoje v půdorysu
+let showLL = false, showPB = true;  // popisky spojů, štítky portů
+let showGF = lsGet('netmapGf', 1);  // rámečky skupin
+let GF = [];              // rámečky skupin z posledního render (gfList), pro tažení myší
 let q = '';               // hledaný text
 let icOpen = false, icQ = '';                      // výběr ikony: otevřený, hledaný text
 let store = null, pendDir = null, saved = '';      // hlavní úložiště (null = jen prohlížeč), složka čekající na povolení, stav ukládání
 let VIS = new Set();      // viditelná zařízení (visSet)
+let DIM = new Set();      // ztlumená zařízení (vypnutý prostor v okně Zobrazení)
 let PAR = {};             // kolmý posun souběžných spojů (parSet)
 let VLM = {};             // členství zařízení ve VLAN (vlMap), počítá se při vykreslení
 let pvOpen = false;       // rozbalená tabulka VLAN portů v panelu
 let wide = lsGet('netmapWide', 0);                 // široký panel vlastností
 
-const alias = () => { P = mode == 'plan' ? PQ : PT; V = VS[mode]; W = mode == 'plan' ? WQ : WT; };
-const snap = () => { undo.push(JSON.stringify([D, PT, PQ, A, WT, WQ])); if (undo.length > 80) undo.shift(); };
+const alias = () => { P = PT; V = VS.topo; W = WT; };
+const snap = () => { undo.push(JSON.stringify([D, PT, WT])); if (undo.length > 80) undo.shift(); };
 function doUndo() {
   if (viewOnly || !undo.length) return;
-  [D, PT, PQ, A, WT = {}, WQ = {}] = JSON.parse(undo.pop());
+  [D, PT, WT = {}] = JSON.parse(undo.pop());
   alias();
   if ($('#fwDlg').open) fwRender();
+  else if ($('#arDlg').open) arRender();
   else if ($('#scDlg').open) scRender();
   else if ($('#bkDlg').open) bkRender();
   else sel = null;
@@ -1097,9 +1124,15 @@ function vlMap() {
       }
     }
     if (!isPass(d)) r.t = [];
-    if (d.vlan) {  // ruční pole VLAN má přednost, nesoulad s portem se jen ohlásí
+    const ws = isWlc(d) && wlFind(d.ssid)?.vlan;  // Wi-Fi klient: síť ze SSID (s kabelem navíc k síti portu)
+    if (ws && !r.u.includes(vlName(ws))) {
+      const s = `ze SSID „${d.ssid}“`;
+      r.u = [...r.u, vlName(ws)];
+      r.src = r.src ? r.src + ' a ' + s : s;
+    }
+    if (d.vlan) {  // ruční pole VLAN má přednost, nesoulad s portem / SSID se jen ohlásí
       const m = vlName(d.vlan);
-      if (r.u.length && !r.u.includes(m)) r.warn = `port říká ${r.u.join(', ')}`;
+      if (r.u.length && !r.u.includes(m)) r.warn = `${r.src}: ${r.u.join(', ')}`;
       Object.assign(r, {u: [m], src: 'zadané ručně'});
     }
     return r;
@@ -1140,7 +1173,7 @@ function setPv(d, p, u, tog) {
   if (!Object.keys(d.pvl).length) delete d.pvl;
 }
 
-// Filtr VLAN (nabídka 🏷 VLAN v hlavičce): vlOff[síť] = 1 schová zařízení, jejichž sítě (netagované i tagované
+// Filtr VLAN (okno 👁 Zobrazení): vlOff[síť] = 1 schová zařízení, jejichž sítě (netagované i tagované
 // podle VLM) jsou všechny vypnuté. VL_NONE = zařízení bez známé sítě. Router, který sítě definuje, je vidět vždy.
 // Pamatuje se v prohlížeči (localStorage netmapVl), stejně jako vrstvy a patra.
 const VL_NONE = '∅';
@@ -1160,43 +1193,178 @@ function vlfSave() {
   for (const k in vlOff) if (!ks.includes(k)) delete vlOff[k];
   lsSet(lsK('netmapVl'), vlOff);
 }
-// nabídka VLAN: ukáže se, až router nějaké sítě má; tlačítko ukazuje, co je vidět (oranžově, když je něco schované)
-let vlfHtml = '';
-function vlBar() {
-  const ks = vlList().length ? vlKeys() : [], on = ks.filter(k => !vlOff[k]);
-  const sum = on.length == ks.length ? '🏷 VLAN ▾'
-    : on.length == 1 ? `🏷 ${vlDot(on[0])} ${esc(vlfLab(on[0]))} ▾`
-    : `🏷 VLAN ${on.length}/${ks.length} ▾`;
-  const menu = ks.map(k => `<label><input type="checkbox" data-vlf="${esc(k)}"${vlOff[k] ? '' : ' checked'}>${vlDot(k)}${esc(vlfLab(k))}`
+// sekce VLAN v okně Zobrazení (ukáže se, až router nějaké sítě má)
+function vlfMenu() {
+  if (!vlList().length) return '';
+  return vlKeys().map(k => `<label><input type="checkbox" data-vlf="${esc(k)}"${vlOff[k] ? '' : ' checked'}>${vlDot(k)}${esc(vlfLab(k))}`
     + `<button class="mini" data-vlonly="${esc(k)}" title="Zobrazit jen tuto síť">jen</button></label>`).join('');
-  const h = sum + menu;
-  if (h == vlfHtml) return;  // beze změny nepřepisovat (prvek by ztratil hover/fokus)
-  vlfHtml = h;
-  $('#vlBtn').innerHTML = sum;
-  $('#vlBtn').classList.toggle('hid', on.length < ks.length);
-  $('#vlF').innerHTML = menu;
-  $('#ddVl').hidden = !ks.length;
 }
 // zaškrtávátko sítě: zobrazit/schovat; poslední zapnutou síť nejde vypnout
-function onVlChange(e) {
-  const c = e.target, k = c.dataset.vlf;
-  if (k == null) return;
+function onVlChange(c) {
+  const k = c.dataset.vlf;
   if (c.checked) delete vlOff[k];
   else if (vlKeys().some(o => o != k && !vlOff[o])) vlOff[k] = 1;
   else { c.checked = true; return; }
-  vlfSave();
-  flApply();
+  fApply();
 }
-// „jen“ = zobrazit jen tuto síť, „vše“ = všechny sítě
-function onVlClick(e) {
-  const b = e.target.closest('[data-vlonly],#vlAll');
-  if (!b) return;
-  e.preventDefault();
-  const k = b.dataset.vlonly;
+// „jen“ = zobrazit jen tuto síť (k), bez k všechny sítě
+function vlOnly(k) {
   vlOff = {};
   if (k != null) vlKeys().forEach(o => { if (o != k) vlOff[o] = 1; });
-  vlfSave();
-  flApply();
+  fApply();
+}
+
+// ---------- Wi-Fi klienti ----------
+// Wi-Fi klient nemá spoj (přeskakuje mezi AP), jen d.ssid = název sítě ze seznamů d.ssids routerů a AP
+// (WL_UNK = Wi-Fi, síť neuvedená). VLAN se bere ze SSID (vlMap), pásmo = průnik pásma SSID a d.bands (umí pásma).
+// Staré spoje wifi24/5/6 klient ↔ router/AP převede wlUpgrade při načtení.
+
+const WL_UNK = '?';
+const WL_LT = ['wifi24', 'wifi5', 'wifi6'];
+const WL_HOST = ['router', 'ap'];
+// typy, které Wi-Fi klientem být nemůžou (síťová infrastruktura, napájení)
+const WL_NO = ['internet', 'modem', 'router', 'switch', 'patch', 'ap', 'ups', 'surge'];
+const wlCan = d => !!d && !WL_NO.includes(d.t);
+const isWlc = d => wlCan(d) && !!d.ssid;
+// všechna SSID (bez duplicit podle názvu), v pořadí podle zařízení; ds = seznam zařízení (i mimo D, pro převod)
+function wlList(ds = D.devices) {
+  const seen = new Set();
+  return ds.flatMap(d => d.ssids || []).filter(s => s.n && !seen.has(s.n) && seen.add(s.n));
+}
+const wlFind = n => n && n != WL_UNK ? wlList().find(s => s.n == n) : null;
+const wlLab = n => n == WL_UNK ? 'Wi-Fi, síť neuvedená' : n + (wlFind(n) ? '' : ' (neznámá)');
+// kdo SSID vysílá (router, AP)
+const wlHosts = n => D.devices.filter(d => d.ssids?.some(s => s.n == n));
+// pásma z textu: „2.4+5 GHz“ → ['2.4', '5']
+const bandSet = s => s ? s.match(/2\.4|\d+/g) || [] : [];
+// pásmo, na kterém se klient připojí: průnik pásma SSID a toho, co zařízení umí; null = průnik je prázdný
+function wlBand(d) {
+  const s = bandSet(wlFind(d.ssid)?.band), b = bandSet(d.bands);
+  const x = s.length && b.length ? s.filter(v => b.includes(v)) : s.length ? s : b;
+  if (!x.length) return s.length && b.length ? null : '';
+  return x.join('+') + ' GHz';
+}
+// Výběr SSID pro klienta: ss = kandidáti (SSID, která vysílá jeho router/AP), vl = jeho VLAN (už přeložená na název,
+// nebo prázdná), band = pásmo dřívějšího spoje. VLAN musí sedět; bez VLAN první SSID s pásmem. Nic nesedí → WL_UNK.
+// Klient na 2.4 GHz dá přednost SSID jen pro 2.4 GHz (bývá to síť pro IoT).
+function wlPick(ss, vl, band, vlOf) {
+  const okB = s => !band || !s.band || bandSet(s.band).includes(band);
+  const okV = s => !vl || vlOf(s.vlan) == vl;
+  const only24 = s => band == '2.4' && bandSet(s.band).join() == '2.4';
+  const s = ss.find(s => okV(s) && only24(s)) || ss.find(s => okV(s) && okB(s)) || ss.find(okV);
+  return s ? s.n : WL_UNK;
+}
+// Převod starých Wi-Fi spojů na d.ssid (pracuje s objekty jako arUpgrade: load, sloučení, zálohy; stejná data = stejný
+// výsledek). Pásmo spoje: 2.4 GHz → zařízení umí jen 2.4, 6 GHz → umí i 6; ruční VLAN shodná se SSID se smaže.
+function wlUpgrade(n) {
+  const by = {}, vls = n.devices.flatMap(d => d.vlans || []);
+  n.devices.forEach(d => by[d.id] = d);
+  const vlOf = s => { const v = s && vls.find(v => v.n == s || v.id == s); return v ? v.n || v.id : s || ''; };
+  const all = wlList(n.devices);
+  n.links = (n.links || []).filter(l => {
+    if (!WL_LT.includes(l.t)) return true;
+    const [h, c] = WL_HOST.includes(by[l.a]?.t) ? [by[l.a], by[l.b]] : [by[l.b], by[l.a]];
+    if (!WL_HOST.includes(h?.t) || !wlCan(c)) return true;
+    const band = {wifi24: '2.4', wifi5: '5', wifi6: '6'}[l.t];
+    if (!c.ssid) {
+      const own = (h.ssids || []).filter(s => s.n);
+      c.ssid = wlPick(own.length ? own : all, vlOf(c.vlan), band, vlOf);
+    }
+    const s = all.find(s => s.n == c.ssid);
+    if (s && c.vlan && vlOf(s.vlan) == vlOf(c.vlan)) delete c.vlan;
+    if (!c.bands && band == '2.4' && bandSet(s?.band).join() != '2.4') c.bands = '2.4 GHz';
+    if (!c.bands && band == '6') c.bands = '2.4+5+6 GHz';
+    return false;
+  });
+  return n;
+}
+// převody starého formátu dohromady (prostory z půdorysu, Wi-Fi spoje)
+const netUpgrade = (n, l) => wlUpgrade(arUpgrade(n, l));
+// Klienti s neuvedenou sítí dostanou SSID podle své VLAN (tlačítko u routeru/AP); vrací počet přiřazených
+function wlFix(dry) {
+  let k = 0;
+  for (const d of D.devices) {
+    if (d.ssid != WL_UNK || !d.vlan) continue;
+    const n = wlPick(wlList(), vlName(d.vlan), '', vlName);
+    if (n == WL_UNK) continue;
+    k++;
+    if (dry) continue;
+    d.ssid = n;
+    if (vlName(wlFind(n).vlan) == vlName(d.vlan)) delete d.vlan;
+  }
+  return k;
+}
+// Přejmenované SSID: klienti jdou za novým názvem, až starý název nevysílá nikdo
+function wlRename(old, nw) {
+  if (!old || !nw || old == nw || wlList().some(s => s.n == old)) return;
+  for (const d of D.devices) if (d.ssid == old) d.ssid = nw;
+}
+// výběr Wi-Fi sítě v panelu zařízení (bez SSID = kabel / jinak), pod ním SSID, VLAN, kdo vysílá a pásmo
+function wlSel(d) {
+  const ss = wlList(), cur = d.ssid || '';
+  const opt = (v, t) => `<option value="${esc(v)}"${v == cur ? ' selected' : ''}>${esc(t)}</option>`;
+  const lab = s => [s.n, s.band, s.vlan && 'síť ' + vlName(s.vlan)].filter(Boolean).join(' · ');
+  const known = cur == WL_UNK || !cur || ss.some(s => s.n == cur);
+  let h = `<label>Wi-Fi (SSID)<select data-f="ssid">${opt('', '— ne, kabel / jinak —')}${ss.map(s => opt(s.n, lab(s))).join('')}`
+    + `${known ? '' : opt(cur, wlLab(cur))}${opt(WL_UNK, '📶 Wi-Fi, síť neuvedená')}</select></label>`;
+  if (!cur) return h;
+  const s = wlFind(cur), hs = s ? wlHosts(cur).map(nm) : [], b = wlBand(d);
+  const info = [hs.length && 'vysílá ' + hs.join(', '), b && 'připojí se na ' + b].filter(Boolean).join(' · ');
+  h += field('bands', d.bands);
+  if (b === null) h += `<p class="hint ov">⚠ Zařízení neumí pásmo sítě ${esc(cur)} (${esc(s.band)}).</p>`;
+  else if (info) h += `<p class="hint">${esc(info)}</p>`;
+  if (cur == WL_UNK) h += `<p class="hint">${ss.length ? 'Vyber síť ze seznamu.' : 'Sítě (SSID) zadej u routeru nebo AP, pak je tu vybereš.'}</p>`;
+  return h;
+}
+// Wi-Fi klient bez datového spoje (bez kabelu, i když ho napájí UPS): stojí v bloku Wi-Fi pod hlavičkou svého SSID
+const wlFree = d => isWlc(d) && !D.links.some(l => (l.a == d.id || l.b == d.id) && !pwLike(l));
+// pásmo SSID jako text („2.4+5 GHz“), stejný tvar jako wlBand
+const wlSB = n => { const b = bandSet(wlFind(n)?.band); return b.length ? b.join('+') + ' GHz' : ''; };
+// pásmo pod bublinou klienta jen tam, kde se liší od hlavičky (zařízení umí míň), ⚠ = neumí pásmo sítě vůbec
+function wlSub(d) {
+  if (!wlFree(d)) return '';
+  const b = wlBand(d);
+  return b === null ? '⚠ pásmo' : b && b != wlSB(d.ssid) ? b : '';
+}
+// hlavička skupiny: [SSID, zbytek] (pásmo, síť VLAN)
+function wlHead(n) {
+  const s = wlFind(n);
+  return [n == WL_UNK ? 'Wi-Fi, síť neuvedená' : n + (s ? '' : ' (neznámá)'), [wlSB(n), s?.vlan && 'síť ' + vlName(s.vlan)].filter(Boolean).join(' · ')];
+}
+const wlHeadTxt = n => '📶 ' + wlHead(n).filter(Boolean).join(' · ');
+const WLH_DX = 220, WLH_DY = 130;  // klienti stejného SSID blíž než tohle patří pod jednu hlavičku
+// Hlavičky Wi-Fi skupin nad klienty bez spojů (počítají se z poloh, neukládají se): klienti stejného SSID, kteří stojí
+// u sebe, tvoří skupinu (i přes souseda); hlavička vlevo nad nejvyšší řadou, barevná tečka = síť VLAN SSID
+function wlGroups() {
+  const ds = D.devices.filter(d => VIS.has(d.id) && P[d.id] && wlFree(d)), up = ds.map((_, i) => i);
+  const root = i => up[i] == i ? i : up[i] = root(up[i]);
+  ds.forEach((a, i) => ds.forEach((b, j) => {
+    if (j <= i || a.ssid != b.ssid) return;
+    if (Math.abs(P[a.id][0] - P[b.id][0]) <= WLH_DX && Math.abs(P[a.id][1] - P[b.id][1]) <= WLH_DY) up[root(j)] = root(i);
+  }));
+  const gs = {};
+  ds.forEach((d, i) => (gs[root(i)] ??= []).push(d));
+  return Object.values(gs);
+}
+// hlavička nad každou skupinou z wlGroups (gs)
+function wlHeads(gs) {
+  return gs.map(g => {
+    const x = Math.min(...g.map(d => P[d.id][0])) - BUB_R, y = Math.min(...g.map(d => P[d.id][1])) - BUB_R - 14;
+    const [n, rest] = wlHead(g[0].ssid), v = wlFind(g[0].ssid)?.vlan;
+    const dm = g.every(d => DIM.has(d.id)) ? ' opacity=".45"' : '';
+    const dot = v ? `<circle cx="${x + 5}" cy="${y - 4}" r="5" fill="${vlC(v)}"/>` : '';
+    return `<g class="wlh"${dm}>${dot}<text x="${x + (v ? 14 : 0)}" y="${y}"><tspan class="wn">📶 ${esc(n)}</tspan>`
+      + `${rest ? `<tspan> · ${esc(rest)}</tspan>` : ''}</text></g>`;
+  }).join('');
+}
+// u routeru/AP: kolik klientů je na kterém jeho SSID; klienti bez sítě se dají přiřadit podle VLAN
+function wlSum(d) {
+  const ss = (d.ssids || []).filter(s => s.n);
+  if (!ss.length) return '';
+  const cnt = n => D.devices.filter(x => isWlc(x) && x.ssid == n).length;
+  const unk = cnt(WL_UNK), fix = unk ? wlFix(1) : 0;
+  return `<p class="hint">Klienti: ${ss.map(s => esc(s.n) + ' ' + cnt(s.n)).join(' · ')}${unk ? ` · síť neuvedená ${unk}` : ''}</p>`
+    + (fix ? `<div class="row"><button data-act="wlfix" title="Klienti se sítí „neuvedená“ dostanou SSID se stejnou VLAN">📶 Přiřadit SSID podle VLAN (${fix})</button></div>` : '');
 }
 
 // ---------- vrstvy ----------
@@ -1217,40 +1385,34 @@ function lLy(l) {
 }
 // Viditelná zařízení: aspoň jeden spoj v zapnuté vrstvě, nebo žádný spoj; zbc/tbr navíc vždy při zapnuté
 // vlastní vrstvě (koordinátor na ethernetu/PoE tak zůstane i ve vrstvě Kabel, USB koordinátor zmizí se Zigbee).
-// Skryté patro schová svá zařízení v obou režimech, stejně jako filtr VLAN (vlHid; VLM musí být spočítané předem).
+// Filtr VLAN je schová (vlHid; VLM musí být spočítané předem), vypnutý prostor jen v režimu „schovat“ (jinak ztlumí, DIM).
 function visSet() {
   const v = new Set(), byDev = {};
   for (const l of D.links) { (byDev[l.a] ??= []).push(l); (byDev[l.b] ??= []).push(l); }
   for (const d of D.devices) {
-    const own = DLY[d.t], ls = byDev[d.id], on = ls?.some(l => lyOn[lLy(l)]);
-    const layerOk = own ? lyOn[own] || on : !ls || on;
-    if (layerOk && !flHid(flOf(PQ[d.id])) && !vlHid(d)) v.add(d.id);
+    // Wi-Fi klient (d.ssid) patří do vrstvy Wi-Fi, i když spoj nemá
+    const own = DLY[d.t], ls = byDev[d.id], wl = isWlc(d), on = ls?.some(l => lyOn[lLy(l)]) || wl && lyOn.wifi;
+    const layerOk = own ? lyOn[own] || on : !ls && !wl || on;
+    if (layerOk && !(arF.hide && arOffD(d)) && !vlHid(d)) v.add(d.id);
   }
   return v;
 }
 const lVis = l => lyOn[lLy(l)] && VIS.has(l.a) && VIS.has(l.b);
-// uloží vrstvy a v tlačítku ukáže, kolik jich je zapnutých (oranžově, když je něco schované)
-function lySave() {
-  lsSet('netmapLy', lyOn);
-  const ks = Object.keys(LY), n = ks.filter(k => lyOn[k]).length, s = $('#lySum');
-  s.textContent = `🗂 Vrstvy${n < ks.length ? ` ${n}/${ks.length}` : ''} ▾`;
-  s.classList.toggle('hid', n < ks.length);
-}
+const lySave = () => lsSet('netmapLy', lyOn);
+// sekce Vrstvy v okně Zobrazení
+const lyMenu = () => Object.entries(LY).map(([k, n]) => `<label><input type="checkbox" data-ly="${k}"${lyOn[k] ? ' checked' : ''}> ${n}</label>`).join('');
 // nové zařízení/spoj ve vypnuté vrstvě: vrstvu zapni, ať hned nezmizí
 function lyEnsure(k) {
   if (lyOn[k]) return;
   lyOn[k] = 1;
-  const c = $(`[data-ly="${k}"]`);
-  if (c) c.checked = true;
   lySave();
 }
 
-// ---------- patra ----------
-// Podlaží je textové pole lvl u prostoru („Suterén“, „Přízemí“, „1. patro“…). Prostor bez lvl ho dědí z nejmenšího
-// prostoru s lvl, ve kterém leží (lvA). Zařízení patří do patra podle pozice v půdorysu (PQ), filtr proto funguje
-// i v topologii. Skrytá patra (flOff[název] = 1) se pamatují v prohlížeči (localStorage netmapFl), stejně jako vrstvy.
+// ---------- patra a filtr prostorů ----------
+// Patro je prostor druhu flr („Suterén“, „Přízemí“, „1. patro“…), viz sekce prostory. Prostor a zařízení patří do
+// nejbližšího patra nad sebou ve stromu prostorů. Patra se stejným názvem (v různých budovách) mají
+// stejnou barvu.
 
-let flOff = lsGet(lsK('netmapFl'), {});
 // pořadí podlaží: suterén < přízemí < čísla < podkroví; neznámé uprostřed
 function lvO(s) {
   s = String(s).replace(/−/g, '-');
@@ -1261,66 +1423,133 @@ function lvO(s) {
   return m ? parseFloat(m[0].replace(',', '.')) : 50;
 }
 // seřazený seznam podlaží
-const flrs = () => [...new Set(A.map(a => a.lvl).filter(Boolean))].sort((x, y) => lvO(x) - lvO(y) || ncmp(x, y));
-// barva patra: ruční fc u prostorů s tímto lvl, jinak paleta podle pořadí
-const flC = f => A.find(a => a.lvl == f && a.fc)?.fc || FC[flrs().indexOf(f) % FC.length];
-// ruční barvu nastaví všem prostorům patra najednou (ať funguje undo); bez c ji smaže
+const flrs = () => [...new Set(D.areas.filter(a => a.k == 'flr').map(a => a.n))].sort((x, y) => lvO(x) - lvO(y) || ncmp(x, y));
+// barva patra: ruční fc u patra s tímto názvem, jinak paleta podle pořadí
+const flC = f => D.areas.find(a => a.k == 'flr' && a.n == f && a.fc)?.fc || FC[flrs().indexOf(f) % FC.length];
+// ruční barvu nastaví všem patrům se stejným názvem; bez c ji smaže
 function setFlC(f, c) {
-  for (const a of A) if (a.lvl == f) { if (c) a.fc = c; else delete a.fc; }
+  for (const a of D.areas) if (a.k == 'flr' && a.n == f) { if (c) a.fc = c; else delete a.fc; }
 }
-// patro bodu p (zařízení), patro prostoru a
-const flOf = p => p && A.filter(a => a.lvl && inA(a, p)).sort(bySz)[0]?.lvl;
-const lvA = a => a.lvl || A.filter(b => b != a && b.lvl && inA(b, aCtr(a))).sort(bySz)[0]?.lvl;
-const flHid = f => !!(f && flOff[f]);
-// uloží filtr pater (a zapomene patra, která už neexistují)
-function flSave() {
-  const fs = flrs();
-  for (const k in flOff) if (!fs.includes(k)) delete flOff[k];
-  lsSet(lsK('netmapFl'), flOff);
+
+// Filtr prostorů (okno 👁 Zobrazení): arF.off[id] = 1 vypne prostor i vše uvnitř, AR_NONE = zařízení bez prostoru.
+// Zařízení ve vypnutém prostoru se ztlumí (DIM), s arF.hide schovají. Pamatuje se v prohlížeči (localStorage netmapAr).
+const AR_NONE = '∅';
+let arF = {off: {}, hide: 0, ...lsGet(lsK('netmapAr'), {})};
+try { localStorage.removeItem(lsK('netmapFl')); } catch {}  // filtr pater z doby před prostory
+// je prostor vypnutý (on sám nebo některý nadřazený)?
+const arOffA = a => arUp(a).some(b => arF.off[b.id]);
+// je zařízení vypnuté filtrem prostorů?
+const arOffD = d => area(d.ar) ? arOffA(area(d.ar)) : !!arF.off[AR_NONE];
+// uloží filtr (a zapomene smazané prostory)
+function arfSave() {
+  for (const k in arF.off) if (k != AR_NONE && !area(k)) delete arF.off[k];
+  lsSet(lsK('netmapAr'), arF);
 }
-// nabídka Patra v hlavičce; s jediným patrem není co filtrovat, ukáže se až od dvou.
-// Tlačítko ukazuje, co je vidět: „Patra“ (vše), název jediného patra, nebo „Patra 2/3“ (oranžově, když je něco schované).
+// sekce Prostory v okně Zobrazení: ztlumit/schovat, strom se zaškrtávátky (patro má místo ikony svou barvu),
+// počet zařízení i uvnitř; řádek pod vypnutým prostorem je bledý
 const flDot = f => `<span class="fdot" style="background:${flC(f)}"></span>`;
-let flHtml = '';
-function flBar() {
-  const fs = flrs(), on = fs.filter(f => !flOff[f]);
-  const sum = on.length == fs.length ? '🏢 Patra ▾'
-    : on.length == 1 ? `🏢 ${flDot(on[0])} ${esc(on[0])} ▾`
-    : `🏢 Patra ${on.length}/${fs.length} ▾`;
-  const menu = fs.map(f => `<label><input type="checkbox" data-fl="${esc(f)}"${flOff[f] ? '' : ' checked'}>${flDot(f)}${esc(f)}`
-    + `<button class="mini" data-flonly="${esc(f)}" title="Zobrazit jen toto patro">jen</button></label>`).join('');
-  const h = sum + menu;
-  if (h == flHtml) return;  // beze změny nepřepisovat (prvek by ztratil hover/fokus)
-  flHtml = h;
-  $('#flSum').innerHTML = sum;
-  $('#flSum').classList.toggle('hid', on.length < fs.length);
-  $('#fl').innerHTML = menu;
-  $('#ddFl').hidden = fs.length < 2;
+function arfMenu() {
+  if (!D.areas.length) return '';
+  const row = (k, h, ico, n, cnt, under) => `<label${under ? ' class="off"' : ''} style="padding-left:${6 + h * 14}px">`
+    + `<input type="checkbox" data-arf="${esc(k)}"${arF.off[k] ? '' : ' checked'}>${ico} ${esc(n)}${cnt ? ` <small>${cnt}</small>` : ''}`
+    + `<button class="mini" data-aronly="${esc(k)}" title="Zobrazit jen tento prostor">jen</button></label>`;
+  const none = D.devices.filter(d => !area(d.ar)).length;
+  return `<div class="seg arm" title="Co udělat se zařízeními ve vypnutých prostorech">`
+    + `<button data-arm="0"${arF.hide ? '' : ' class="on"'}>ztlumit</button><button data-arm="1"${arF.hide ? ' class="on"' : ''}>schovat</button></div>`
+    + arTree().map(([a, h]) => row(a.id, h, a.k == 'flr' ? flDot(a.n) : AKI(a.k), a.n, arDevs(a, 1).length, arOffA(area(a.par)))).join('')
+    + (none ? row(AR_NONE, 0, '∅', 'bez prostoru', none) : '');
+}
+// „jen“ = vypnout všechno mimo cestu k prostoru k a mimo něj (k = AR_NONE: jen zařízení bez prostoru), bez k vše zapnout
+function arOnly(k) {
+  arF.off = {};
+  if (k != null) {
+    const a = area(k), keep = new Set(a ? arUp(a) : []);
+    for (const b of D.areas) {
+      const up = area(b.par);
+      if (!keep.has(b) && (!up || (keep.has(up) && up != a))) arF.off[b.id] = 1;
+    }
+    if (a) arF.off[AR_NONE] = 1;
+  }
+  fApply();
+}
+
+// ---------- okno Zobrazení ----------
+// Jedno okno 👁 Zobrazení (#ddView) místo samostatných nabídek: Vrstvy, VLAN, Prostory a Popisky. Tlačítko v hlavičce
+// má odznak s počtem omezených oblastí (vrstvy / VLAN / prostory), „↺ Vše zpět“ je zapne všechny.
+
+// které oblasti filtrů něco schovávají/tlumí: [[oblast, co], …]
+function vwActive() {
+  const o = [];
+  const ly = Object.keys(LY).filter(k => !lyOn[k]);
+  if (ly.length) o.push(['Vrstvy', ly.map(k => LY[k]).join(', ')]);
+  const vl = vlList().length ? vlKeys().filter(k => vlOff[k]) : [];
+  if (vl.length) o.push(['VLAN', vl.map(vlfLab).join(', ')]);
+  const ar = D.areas.length ? Object.keys(arF.off).filter(k => k == AR_NONE || area(k)) : [];  // smazaný prostor (undo ho může vrátit) nepočítat
+  if (ar.length) o.push([arF.hide ? 'Prostory (schované)' : 'Prostory (ztlumené)', ar.map(k => k == AR_NONE ? 'bez prostoru' : area(k)?.n).join(', ')]);
+  return o;
+}
+// přepíše obsah prvku jen při změně (jinak by ztratil hover a fokus)
+const vwHtml = {};
+function vwSet(id, h) {
+  if (vwHtml[id] == h) return;
+  vwHtml[id] = h;
+  $('#' + id).innerHTML = h;
+}
+// tlačítko s odznakem a obsah okna; volá render
+function vwBar() {
+  const act = vwActive(), s = $('#vwSum');
+  vwSet('vwSum', `👁 Zobrazení${act.length ? ` <span class="bdg">${act.length}</span>` : ''} ▾`);
+  s.classList.toggle('hid', act.length > 0);
+  s.title = act.length ? 'Omezené zobrazení:\n' + act.map(([n, t]) => `${n}: ${t}`).join('\n') : 'Co se má na mapě zobrazit: vrstvy, sítě VLAN, prostory, popisky';
+  $('#vwReset').disabled = !act.length;
+  vwSet('ly', lyMenu());
+  vwSet('vlF', vlfMenu());
+  vwSet('arF', arfMenu());
+  $('#vwVl').hidden = !vlList().length;
+  $('#vwAr').hidden = !D.areas.length;
+}
+// okno pod tlačítkem, ale celé na obrazovce (na mobilu je přes celou obrazovku z CSS)
+function vwPlace() {
+  const m = $('#vwM'), b = $('#vwSum').getBoundingClientRect();
+  if (!$('#ddView').open || isMob()) { m.style.left = m.style.top = ''; return; }
+  m.style.top = b.bottom + 4 + 'px';
+  m.style.left = Math.max(8, Math.min(b.left, innerWidth - m.offsetWidth - 8)) + 'px';
 }
 // po změně filtru: uložit, zrušit výběr schovaného zařízení a překreslit
-function flApply() {
-  flSave();
+function fApply() {
+  lySave();
+  vlfSave();
+  arfSave();
   if (sel?.k == 'd' && !visSet().has(sel.id)) { sel = null; renderProps(); }
   render();
 }
-// zaškrtávátko patra: zobrazit/schovat; poslední viditelné patro nejde schovat
-function onFloorChange(e) {
-  const c = e.target, f = c.dataset.fl;
-  if (f == null) return;
-  if (c.checked) delete flOff[f];
-  else if (flrs().some(o => o != f && !flOff[o])) flOff[f] = 1;
-  else { c.checked = true; return; }
-  flApply();
+// ↺ Vše zpět: všechny vrstvy, sítě a prostory zapnuté (popisky a režim ztlumit/schovat zůstanou)
+function vwReset() {
+  for (const k in LY) lyOn[k] = 1;
+  vlOff = {};
+  arF.off = {};
+  fApply();
 }
-// „jen“ = zobrazit jen toto patro, „vše“ = všechna patra
-function onFloorClick(e) {
-  const b = e.target.closest('[data-flonly],#flAll');
+function onVwChange(e) {
+  const c = e.target, ds = c.dataset;
+  if (ds.ly) { lyOn[ds.ly] = c.checked ? 1 : 0; fApply(); }
+  else if (ds.vlf != null) onVlChange(c);
+  else if (ds.arf != null) { if (c.checked) delete arF.off[ds.arf]; else arF.off[ds.arf] = 1; fApply(); }
+  else if (c.id == 'cLL') { showLL = c.checked; render(); }
+  else if (c.id == 'cPB') { showPB = c.checked; render(); }
+  else if (c.id == 'cGF') { showGF = c.checked ? 1 : 0; lsSet('netmapGf', showGF); render(); }
+}
+function onVwClick(e) {
+  const b = e.target.closest('button');
   if (!b) return;
-  e.preventDefault();
-  const f = b.dataset.flonly;
-  flOff = {};
-  if (f != null) flrs().forEach(o => { if (o != f) flOff[o] = 1; });
-  flApply();
+  e.preventDefault();  // tlačítko „jen“ leží v labelu, nesmí přepnout zaškrtávátko
+  const ds = b.dataset;
+  if (b.id == 'vwX') $('#ddView').open = false;
+  else if (b.id == 'vwReset') vwReset();
+  else if (b.id == 'lyAll') { for (const k in LY) lyOn[k] = 1; fApply(); }
+  else if (b.id == 'vlAll' || ds.vlonly != null) vlOnly(ds.vlonly);
+  else if (b.id == 'arAll' || ds.aronly != null) arOnly(ds.aronly);
+  else if (ds.arm != null) { arF.hide = +ds.arm; fApply(); }
 }
 
 // ---------- souběžné spoje ----------
@@ -1496,12 +1725,16 @@ function schRoutes() {
     const lv = [];  // obsazené roviny sběrnic [úroveň, od, do]
     const mb = [];  // ručně posunuté sběrnice [poloha, od, do]: automatické se jim vyhnou, proto jdou na řadu první
     const order = gs.map((g, k) => [g, k]).sort(([a], [b]) => (W[b.k + '|b'] != null) - (W[a.k + '|b'] != null));
+    const tOf = (g, k) => X(p) + (wkClamp(W[g.k + '|k']) ?? (k - (gs.length - 1) / 2) * 10);
+    // napájení: kmeny ostatních skupin rodiny jsou předem zabrané, aby po nich nevedl zub (rk = klíč skupiny)
+    if (pw) for (const [g, k] of order) segs.push(Object.assign([pt(tOf(g, k), M(p)), pt(tOf(g, k), M(p) + sg * (off + 40))], {rk: g.k}));
     for (const [g, k] of order) {
+      for (let i = segs.length; i--;) if (segs[i].rk == g.k) segs.splice(i, 1);
       // kmeny vycentrované kolem středu rodiče (2 → ±5, 3 → −10/0/+10…), seřazené podle polohy potomků; ručně posunutý má přednost
       // ruční polohy se omezí (i staré nebo po posunu zařízení): kmen v bublině rodiče, sběrnice mezi rodičem a potomky
       const kmn = Math.min(...g.ls.map(([, , c]) => Math.abs(M(c) - M(p))));
-      const wk = wkClamp(W[g.k + '|k']), wb = wbClamp(W[g.k + '|b'], kmn, wbMin(g.pid, vt && sg > 0)), wz = g.ls.map(([l]) => W[g.k + '|' + l.id]);
-      const t = X(p) + (wk ?? (k - (gs.length - 1) / 2) * 10);
+      const wb =wbClamp(W[g.k + '|b'], kmn, wbMin(g.pid, vt && sg > 0)), wz = g.ls.map(([l]) => W[g.k + '|' + l.id]);
+      const t = tOf(g, k);
       // polohy zubů (posunuté o co); souběžné spoje ke stejnému potomkovi rozestoupené o PAR; ručně posunutý zub stojí
       const cxs = co => g.ls.map(([l, , c], j) => {
         if (wz[j] != null) return X(c) + wz[j];
@@ -1667,68 +1900,135 @@ function schRoutes() {
   }
 }
 
+// ---------- rámečky skupin ----------
+// Počítají se při každém vykreslení (neukládají se): rámeček kolem routeru/switche/AP a jeho kabelového podstromu
+// (strom z layGraph, s UPS/přepěťovkou, která napájí jen jedno zařízení v něm), když jsou v něm aspoň 2 viditelná
+// zařízení. Vnořené rámečky: vnější má odsazení o GF_STEP větší za každou úroveň uvnitř. Wi-Fi skupina (wlGroups)
+// má rámeček, jehož horní hrana vede přes hlavičku 📶. Tažení za okraj nebo štítek posune celou skupinu (drag.m 'grp');
+// ruční čáry schématu jsou uložené relativně k bublinám, takže jdou s ní.
+
+const GF_T = ['router', 'switch', 'ap'];  // typy, které mají rámeček se svým podstromem
+const GF_PAD = 12;   // odsazení nejvnitřnějšího rámečku od bublin a popisků
+const GF_STEP = 10;  // každá úroveň rámečků uvnitř přidá tolik odsazení
+// obdélník kolem bubliny s kroužkem a popisky [x0, y0, x1, y1]
+function gfBox(d) {
+  const [x, y] = P[d.id], sub = devSub(d);
+  const hw = Math.max(BUB_R + 6, txtW(nm(d), '600 12px') / 2, sub ? txtW(sub, '10px') / 2 : 0);
+  return [x - hw, y - BUB_R - 6, x + hw, y + (sub ? 60 : 47)];
+}
+const gfUnion = bs => [0, 1, 2, 3].map(i => (i < 2 ? Math.min : Math.max)(...bs.map(b => b[i])));
+// rámečky: [{id (kořen, u Wi-Fi null), ids (zařízení uvnitř), r: [x0, y0, x1, y1], lab, wl}], vnější před vnitřními
+function gfList(wg) {
+  const G = layGraph(), out = [], ok = id => VIS.has(id) && P[id];
+  // vrátí rámečky nejblíž pod id (nebo jeho vlastní) a doplní out; f.h = počet úrovní rámečků uvnitř
+  const walk = id => {
+    const ch = (G.kids[id] || []).flatMap(walk), d = byId(id);
+    if (!GF_T.includes(d.t) || !ok(id)) return ch;
+    const all = [];
+    const add = i => {
+      all.push(i, ...(G.att[i] || []));
+      (G.kids[i] || []).forEach(add);
+    };
+    add(id);
+    const ids = all.filter(ok);
+    if (ids.length < 2) return ch;
+    const f = {id, ids, lab: nm(d), h: ch.length ? 1 + Math.max(...ch.map(c => c.h)) : 0};
+    const pad = GF_PAD + GF_STEP * f.h, [x0, y0, x1, y1] = gfUnion(ids.map(i => gfBox(byId(i))));
+    f.r = [x0 - pad, y0 - pad, x1 + pad, y1 + pad];
+    out.push(f);
+    return [f];
+  };
+  G.roots.forEach(walk);
+  out.sort((a, b) => b.h - a.h);
+  // Wi-Fi: horní hrana vede přes hlavičku (wlHeads ji píše 40 px nad nejvyšší řadu bublin)
+  for (const g of wg) {
+    const [x0, , x1, y1] = gfUnion(g.map(gfBox)), top = Math.min(...g.map(d => P[d.id][1])) - BUB_R - 18;
+    out.push({id: null, ids: g.map(d => d.id), wl: 1, lab: wlHeadTxt(g[0].ssid), r: [x0 - GF_PAD, top, x1 + GF_PAD, y1 + GF_PAD]});
+  }
+  return out;
+}
+// jeden rámeček (i = pořadí v GF): viditelný obrys, štítek vlevo nahoře na hraně a neviditelné úchyty (okraj, štítek);
+// štítek uhne doprava, když by zakryl štítek portu (rs = obdélníky štítků portů)
+function gfSvg(f, i, rs) {
+  const [x0, y0, x1, y1] = f.r, w = x1 - x0, h = y1 - y0;
+  const dm = f.ids.every(id => DIM.has(id)) ? ' opacity=".45"' : '';
+  const on = drag?.m == 'grp' && drag.f == i || f.id && sel?.k == 'd' && sel.id == f.id ? ' on' : '';
+  // u Wi-Fi je štítkem hlavička skupiny (wlHeads), tady je jen místo, za které jde chytit
+  let [lx, lw] = f.wl ? [x0 + GF_PAD - 2, txtW(f.lab, '600 12px') + 20] : [x0 + 16, txtW(f.lab, '600 11px') + 8];
+  // úzký rámeček bez místa vpravo: štítek na spodní hranu
+  let ly = y0;
+  for (let k = 0; !f.wl && k < 20; k++) {
+    const r = rs.find(r => r[0] < lx + lw && r[2] > lx && r[1] < ly + 7 && r[3] > ly - 9);
+    if (!r) break;
+    if (r[2] + 4 + lw <= x1 - 12) lx = r[2] + 4;
+    else if (ly == y0) { ly = y1; lx = x0 + 16; }
+    else break;
+  }
+  const lab = f.wl ? '' : `<text class="gfl" x="${lx + 4}" y="${ly + 4}">${esc(f.lab)}</text>`;
+  return `<g class="gf${on}" data-gf="${i}"${dm}><title>${esc(f.lab)}: táhni za okraj nebo štítek = posunout celou skupinu</title>`
+    + `<rect class="gfr" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="12"/>${lab}`
+    + `<rect class="gfh" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="12"/>`
+    + `<rect class="gft" x="${lx}" y="${ly - 9}" width="${lw}" height="16"/></g>`;
+}
+
 // ---------- vykreslení mapy ----------
 
 function render() {
   VLM = vlMap();
   VIS = visSet();
+  DIM = arF.hide ? new Set() : new Set(D.devices.filter(arOffD).map(d => d.id));
   PAR = parSet();
   $('#bSch').classList.toggle('on', !!V.sch);
-  const plan = mode == 'plan', linksOn = !plan || showPL, o = [];
-  if (plan) o.push(...areasSvg());
+  const o = [];
   const bub = D.devices.filter(d => VIS.has(d.id) && P[d.id]).map(d => [d.id, ...P[d.id]]);
-  const {R, dots} = V.sch && linksOn ? schRoutes() : {R: {}, dots: []};
+  const {R, dots} = V.sch ? schRoutes() : {R: {}, dots: []};
   SCH = R;
-  const LV = D.links.filter(l => P[l.a] && P[l.b] && lVis(l) && linksOn), LP = {};
+  // rámečky skupin úplně dospod, pod čáry
+  const WG = wlGroups();
+  GF = showGF ? gfList(WG) : [];
+  const gi = o.push('') - 1;  // rámečky se doplní, až budou spočítané štítky portů
+  const LV = D.links.filter(l => P[l.a] && P[l.b] && lVis(l)), LP = {};
   for (const l of LV) LP[l.id] = R[l.id]?.pts || parPts(l, P[l.a], P[l.b]);
   // štítky portů se počítají předem, aby se jim cizí čáry vyhnuly
-  const PB = showPB && linksOn ? portBadges(LP, R) : [];
+  const PB = showPB ? portBadges(LP, R) : [];
+  o[gi] = GF.map((f, i) => gfSvg(f, i, PB.map(([, r]) => r))).join('');
   // vybraný spoj až nakonec, aby jeho auru nepřekryly ostatní čáry
   const isSelL = l => sel?.k == 'l' && sel.id == l.id;
   // úsečky všech čar [id, a, b]: ⚡ a popisky se jim vyhýbají
   const LS = LV.flatMap(l => LP[l.id].slice(1).map((q, i) => [l.id, LP[l.id][i], q]));
-  for (const l of [...LV.filter(l => !isSelL(l)), ...LV.filter(isSelL)]) o.push(linkSvg(l, LP[l.id], R[l.id], bub, PB, plan, LS));
-  for (const [[x, y], c] of dots) o.push(`<circle class="jn" cx="${x}" cy="${y}" r="4" fill="${c}"/>`);
+  // ztlumené spoje dospodu a v jedné průhledné skupině: ve schématu sdílí kmen a sběrnici s plnými i mezi sebou,
+  // takže by se překryvy jednotlivě průhledných čar sčítaly (místy tmavší) a zesvětlovaly plné čáry
+  const dl = LV.filter(l => !isSelL(l) && dimL(l));
+  // uzel ● je ztlumený, když jím neprochází žádná plná čára
+  const onFull = ([x, y]) => LV.some(l => !dimL(l) && LP[l.id].slice(1).some((q, i) => {
+    const p = LP[l.id][i];
+    return Math.abs((q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0])) < .5
+      && x >= Math.min(p[0], q[0]) - .5 && x <= Math.max(p[0], q[0]) + .5 && y >= Math.min(p[1], q[1]) - .5 && y <= Math.max(p[1], q[1]) + .5;
+  }));
+  const jn = ([[x, y], c]) => `<circle class="jn" cx="${x}" cy="${y}" r="4" fill="${c}"/>`;
+  const dd = DIM.size ? dots.filter(([p]) => !onFull(p)) : [];
+  if (dl.length || dd.length) o.push(`<g opacity=".25">${dl.map(l => linkSvg(l, LP[l.id], R[l.id], bub, PB, LS)).join('')}${dd.map(jn).join('')}</g>`);
+  for (const l of [...LV.filter(l => !isSelL(l) && !dimL(l)), ...LV.filter(isSelL)]) o.push(linkSvg(l, LP[l.id], R[l.id], bub, PB, LS));
+  for (const t of dots) if (!dd.includes(t)) o.push(jn(t));
   if (drag?.m == 'link') {
     const a = P[drag.id];
     o.push(`<line class="tmp" x1="${a[0]}" y1="${a[1]}" x2="${drag.x}" y2="${drag.y}" stroke="var(--ac)" stroke-width="2" stroke-dasharray="4 3"/>`);
   }
+  o.push(wlHeads(WG));
   const ql = q.toLowerCase();
   for (const d of D.devices) if (VIS.has(d.id)) o.push(devSvg(d, matches(d, ql)));
   for (const [, , h] of PB) o.push(h);
   $('#vp').innerHTML = o.join('');
   applyView();
-  flBar();
-  vlBar();
+  vwBar();
   showStatus();
 }
-// hledání: text ve kterémkoli poli zařízení (i ve VLAN/SSID)
+// hledání: text ve kterémkoli poli zařízení (i ve VLAN/SSID) a v cestě jeho prostoru
 function matches(d, ql) {
   if (!ql) return true;
-  return Object.entries(d).filter(([k]) => k != 'img').map(([, v]) => v)
+  return [roomOf(d), ...Object.entries(d).filter(([k]) => k != 'img' && k != 'ar').map(([, v]) => v)]
     .map(v => Array.isArray(v) ? v.map(x => Object.values(x).join(' ')).join(' ') : v && typeof v == 'object' ? JSON.stringify(Object.values(v)) : v)
     .join(' ').toLowerCase().includes(ql);
-}
-// prostory půdorysu (největší vespod) a mřížka
-function areasSvg() {
-  const o = ['<rect class="grid" x="-20000" y="-20000" width="40000" height="40000" fill="url(#grid)"/>'];
-  for (const a of [...A].sort(bySzDesc)) {
-    const s = sel?.k == 'a' && sel.id == a.id, f = lvA(a), c = f && flC(f), lw = Math.max(60, String(a.n).length * 7 + 20);
-    if (flHid(f)) {
-      // skryté patro: prostory s vlastním podlažím mají jen čárkovaný obrys a štítek (klik ho zase zobrazí), zbytek se nekreslí
-      if (a.lvl) {
-        const t = `${a.n} · ${f} · skryto`, tw = Math.max(60, t.length * 7 + 20);
-        o.push(`<g class="ar fl off" style="--fc:${c}"><rect class="ab" x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" rx="4"/>`
-          + `<g data-flon="${esc(f)}"><rect class="at" x="${a.x}" y="${a.y - 22}" width="${tw}" height="20" rx="4"/><text class="an" x="${a.x + tw / 2}" y="${a.y - 8}">${esc(t)}</text></g></g>`);
-      }
-      continue;
-    }
-    o.push(`<g class="ar k-${a.k || 'room'}${c ? ' fl' : ''}${s ? ' sel' : ''}"${c ? ` style="--fc:${c}"` : ''}>`
-      + `<rect class="ab" x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" rx="4"/>`
-      + `<g data-a="${a.id}">${f ? `<title>${esc(a.n)} · ${esc(f)}</title>` : ''}<rect class="at" x="${a.x}" y="${a.y - 22}" width="${lw}" height="20" rx="4"/><text class="an" x="${a.x + lw / 2}" y="${a.y - 8}">${esc(a.n)}</text></g>`
-      + `<rect class="ah" data-ah="${a.id}" x="${a.x + a.w - 12}" y="${a.y + a.h - 12}" width="12" height="12"/></g>`);
-  }
-  return o;
 }
 // Štítky portů u konců spojů (⚡ = PoE port): [[id spoje, obdélník kolem štítku, SVG], …]
 // LP = trasy spojů, R = trasy schématu. Ve schématu leží na zubu hrábí: port rodiče hned pod sběrnicí, port potomka u bubliny.
@@ -1763,15 +2063,17 @@ function portBadges(LP, R) {
         y = B[1] + (E[1] - B[1]) * h / s;
       }
       PB.push([l.id, [x - w / 2 - 3, y - 10, x + w / 2 + 3, y + 10],
-        `<g class="pbg" data-l="${l.id}"><rect x="${x - w / 2}" y="${y - 7}" width="${w}" height="14" rx="4" stroke="${lType(l.t)[1]}"/><text x="${x}" y="${y + 3}">${esc(label)}</text></g>`]);
+        `<g class="pbg${dimL(l) ? ' dm' : ''}" data-l="${l.id}"><rect x="${x - w / 2}" y="${y - 7}" width="${w}" height="14" rx="4" stroke="${lType(l.t)[1]}"/><text x="${x}" y="${y + 3}">${esc(label)}</text></g>`]);
     }
   }
   return PB;
 }
+// spoj je ztlumený, jen když jsou ztlumené oba konce (čára k viditelnému zařízení zůstane plná)
+const dimL = l => DIM.has(l.a) && DIM.has(l.b);
 // lomená čára je ve skutečnosti rovná (všechny body na jedné svislé nebo vodorovné přímce)
 const isStraight = pts => pts.every(q => q[0] == pts[0][0]) || pts.every(q => q[1] == pts[0][1]);
 // Jeden spoj: neviditelná široká čára pro klikání, viditelná čára přerušená kolem cizích bublin a štítků, ⚡ a popisek
-function linkSvg(l, pts, rt, bub, PB, plan, LS) {
+function linkSvg(l, pts, rt, bub, PB, LS) {
   const [lab, col, dash] = lType(l.t), s = sel?.k == 'l' && sel.id == l.id;
   const rs = PB.filter(([id]) => id != l.id).map(([, r]) => r);
   const cut = polyCut(pts, bub.filter(([id]) => id != l.a && id != l.b), rs);
@@ -1779,11 +2081,13 @@ function linkSvg(l, pts, rt, bub, PB, plan, LS) {
   const width = s ? 4 : isPw(l.t) || l.t == 'mesh' ? 3 : 2;
   // vybraný spoj má pod čarou plnou pulzující auru ve své barvě (přerušenou stejně jako čára, takže nekryje cizí bubliny)
   const aura = s ? `<path class="la" d="${cut}" stroke="${col}" stroke-width="22"/><path class="la la2" d="${cut}" stroke="${col}" stroke-width="11"/>` : '';
-  let h = `<g data-l="${l.id}"${plan && !s ? ' opacity=".55"' : ''}>`
+  let h = `<g data-l="${l.id}">`
     + `<path d="${'M' + pts.map(p => p.join(',')).join('L')}" fill="none" stroke="transparent" stroke-width="14"/>`
     + aura
     + `<path d="${cut}" fill="none" stroke="${col}" stroke-width="${width}"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
-  if (showLL || s) {
+  // ztlumený spoj bez ⚡/USB/popisku: ve schématu by ležely na kmeni sdíleném s plnými čarami
+  if (dimL(l) && !s) {
+  } else if (showLL || s) {
     const pp = upFirst(l).map(k => l['p' + k]), ports = pp.some(Boolean) ? ` ${pp[0] || '?'}↔${pp[1] || '?'}` : '';
     const [mx, my] = mid();
     h += `<text class="ll${s ? ' on' : ''}" x="${mx}" y="${my - 4}">${esc(lab + ports)}</text>`;
@@ -1807,7 +2111,7 @@ function wireHandles(pts) {
   }
   return h;
 }
-// Bublina zařízení: kroužek (topologie = VLAN, půdorys = patro), ikona, odznak mesh role (M/S), název a IP (u internetu přípojka a rychlost)
+// Bublina zařízení: kroužek (sítě VLAN), ikona, odznak mesh role (M/S), název a IP (u internetu přípojka a rychlost)
 // vybraná bublina má pulzující auru v barvě kroužku (jako vybraný spoj)
 function devSvg(d, lit) {
   const [x, y] = P[d.id] || [0, 0], s = sel?.k == 'd' && sel.id == d.id;
@@ -1815,22 +2119,23 @@ function devSvg(d, lit) {
   const [ring, col] = devRing(d);
   const aura = s ? `<circle class="la" r="${BUB_R}" style="fill:none;stroke:${col};stroke-width:22px"/>`
     + `<circle class="la la2" r="${BUB_R}" style="fill:none;stroke:${col};stroke-width:11px"/>` : '';
-  return `<g data-d="${d.id}" class="nd${s ? ' sel' : ''}" transform="translate(${x},${y})" opacity="${lit ? 1 : .15}">`
+  // ztlumená bublina (hledání, vypnutý prostor) má pod sebou neprůhledný kotouč, aby přes ni nebyly vidět čáry sbíhající se do středu
+  const op = (lit ? 1 : .15) * (DIM.has(d.id) ? .25 : 1);
+  // i popisky: neprůhledné obrysy pod nimi zakryjí čáry, ztlumený text (méně než bublina) pak jde přečíst
+  const lab = c => `<text class="nm${c}" y="43">${esc(nm(d))}</text>${sub ? `<text class="ip${c}" y="56">${esc(sub)}</text>` : ''}`;
+  return `<g data-d="${d.id}" class="nd${s ? ' sel' : ''}" transform="translate(${x},${y})">`
+    + (op < 1 ? `<circle r="${BUB_R + 10}" style="fill:var(--bg);stroke:none"/>${lab(' hl')}<g opacity="${op}">` : '<g>')
     + aura + ring
     + `<circle r="${BUB_R}"/>${icSvg(d)}`
     + (d.mrole && !/^sam/.test(d.mrole) ? `<g class="mb"><circle cx="19" cy="-19" r="8"/><text x="19" y="-15.5">${/^hl/.test(d.mrole) ? 'M' : 'S'}</text></g>` : '')
-    + `<text class="nm" y="43">${esc(nm(d))}</text>${sub ? `<text class="ip" y="56">${esc(sub)}</text>` : ''}</g>`;
+    + (op < 1 ? `</g><g opacity="${Math.max(op, .45)}">` : '') + lab('') + '</g></g>';
 }
-// druhý řádek pod názvem bubliny: IP, u internetu přípojka a rychlost
-const devSub = d => d.t == 'internet' ? [d.wan, d.down && `${d.down}/${d.up || '?'}`].filter(Boolean).join(' ') : d.ip;
+// druhý řádek pod názvem bubliny: IP, u internetu přípojka a rychlost,
+// u Wi-Fi klienta navíc pásmo, když se liší od hlavičky jeho SSID (wlSub)
+const devSub = d => d.t == 'internet' ? [d.wan, d.down && `${d.down}/${d.up || '?'}`].filter(Boolean).join(' ') : [d.ip, wlSub(d)].filter(Boolean).join(' · ');
 // Kroužek kolem bubliny a jeho hlavní barva (pro auru): [svg, barva]
-// půdorys: barva patra; topologie: sítě VLAN, každá svým obloukem (plný = netagovaná, čárkovaný = tagovaná)
+// sítě VLAN, každá svým obloukem (plný = netagovaná, čárkovaný = tagovaná)
 function devRing(d) {
-  if (mode == 'plan') {
-    const f = flOf(PQ[d.id]);
-    if (!f) return ['', 'var(--ac)'];
-    return [`<circle class="fr" r="30" style="stroke:${flC(f)}"><title>${esc(f)}</title></circle>`, flC(f)];
-  }
   const m = VLM[d.id];
   const all = m ? [...m.u.map(v => [v, 1]), ...m.t.map(v => [v, 0])] : [];
   if (!all.length) return ['', 'var(--ac)'];
@@ -1848,10 +2153,11 @@ function devRing(d) {
 function showStatus() {
   const hidden = D.devices.length - VIS.size;
   $('#stAct').hidden = !store?.conflict;
-  $('#st').textContent = `${D.devices.length} zařízení${hidden > 0 ? ` (${hidden} skryto filtrem vrstev / pater / VLAN)` : ''} · ${D.links.length} spojů${A.length ? ` · ${A.length} prostorů` : ''} · ${saved}`
+  $('#st').textContent = `${D.devices.length} zařízení${hidden > 0 ? ` (${hidden} skryto)` : ''}${DIM.size ? ` (${DIM.size} ztlumeno)` : ''} · ${D.links.length} spojů${D.areas.length ? ` · ${D.areas.length} prostorů` : ''} · ${saved}`
     + (viewOnly ? '   |   👁 jen prohlížení: klikni na zařízení nebo spoj · F přizpůsobit · kolečko = zoom · ✎ Upravit odemkne'
       : locked ? '   |   🔒 zamčeno: klikni na zařízení a uprav ho v panelu · F přizpůsobit · kolečko = zoom'
       : `   |   Shift+táhni = nový spoj · Del smazat · Ctrl+Z zpět · Ctrl+D duplikovat · F přizpůsobit · kolečko = zoom`
+      + (showGF ? ' · táhni rámeček = posunout skupinu' : '')
       + (V.sch ? ' · táhni čáru schématu = posunout, dvojklik = zpět automaticky' : ''));
 }
 
@@ -1995,14 +2301,22 @@ function vlSum() {
     const k = vlK(v), ps = [], ss = new Set();
     for (const [d, pe] of pva) {
       const pu = pe.filter(([, pv]) => pv.u == k).map(([p]) => p), pt = pe.filter(([, pv]) => pv.t?.includes(k)).map(([p]) => p);
-      if (pu.length) ps.push(`${nm(d)} ${ranges(pu)}`);
-      if (pt.length) ps.push(`${nm(d)} ${ranges(pt)} (tag)`);
+      // název zařízení se nezalomí, porty jen za čárkou
+      const pp = (a, tag) => `<span class="vsd">${esc(nm(d))}</span> <b>${esc(ranges(a).replace(/,/g, ', '))}</b>${tag ? ' <i>tag</i>' : ''}`;
+      if (pu.length) ps.push(pp(pu));
+      if (pt.length) ps.push(pp(pt, 1));
       for (const s of d.ssids || []) if (s.n && vlName(s.vlan) == k) ss.add(s.n);
     }
-    const info = [ps.length && '🔌 ' + ps.join(', '), ss.size && '📶 ' + [...ss].join(', ')].filter(Boolean).join(' · ');
-    return `<div>${vlChip(k)}${info ? esc(info) : '<span class="hint">zatím nikde</span>'}</div>`;
+    // buňka: každá položka na vlastním řádku, prázdná = pomlčka
+    const cell = a => a.length ? a.map(x => `<div>${x}</div>`).join('') : '<span class="hint">–</span>';
+    return `<div class="vsc${ss.size ? ' vs2' : ''}">${vlChip(k)}</div>`
+      + `<div class="vss${ss.size ? '' : ' vs0'}">${cell([...ss].map(s => `<span class="vsi">📶 </span>${esc(s)}`))}</div>`
+      + `<div class="vsp">${cell(ps)}</div>`;
   });
-  return rows.length ? `<div class="sub">Kde jsou sítě</div><div class="vsm">${rows.join('')}</div>` : '';
+  if (!rows.length) return '';
+  return '<div class="sub">Kde jsou sítě</div>'
+    + '<div class="vsm"><span class="vsh">síť</span><span class="vsh">Wi-Fi<i class="vsi"> a porty</i></span><span class="vsh">porty</span>'
+    + rows.join('') + '</div>';
 }
 // Členství zařízení ve VLAN a odkud se vzalo (router sítě definuje, tam se neukazuje)
 function vlInfo(d) {
@@ -2020,8 +2334,7 @@ function renderProps() {
   let h;
   if (sel?.k == 'd' && byId(sel.id)) h = devProps(byId(sel.id));
   else if (sel?.k == 'l' && lnk(sel.id)) h = linkProps(lnk(sel.id));
-  else if (sel?.k == 'a' && area(sel.id)) h = areaProps(area(sel.id));
-  else { sel = null; h = viewOnly ? helpView() : mode == 'plan' ? HELP_PLAN : HELP_TOPO; }
+  else { sel = null; h = viewOnly ? helpView() : HELP_TOPO; }
   $('#props').innerHTML = h;
   roLock($('#props'));
 }
@@ -2044,14 +2357,15 @@ function fwBtn() {
 const sec = (title, body) => body ? `<h4 class="sh">${title}</h4>${body}` : '';
 // Panel zařízení po sekcích: nahoře co to je (název, typ, ikona), pak Údaje, Sítě, Porty, Spoje a akce
 function devProps(d) {
-  const ex = T[d.t][2], has = f => ex.includes(f), fl = f => LF[f] ? listField(f, d[f]) : f == 'room' && A.length ? roomSel(d) : field(f, d[f]);
+  const ex = T[d.t][2], has = f => ex.includes(f), fl = f => LF[f] ? listField(f, d[f]) : f == 'room' && D.areas.length ? roomSel(d) : field(f, d[f]);
   const info = [...ex.filter(f => !LF[f] && f != 'poew'), ...(d.t == 'internet' ? [] : ['model', 'sn', 'mac', 'room']), 'note'];
   const nets = [
+    wlCan(d) ? wlSel(d) : '',
     d.t == 'internet' || has('vlans') ? '' : field('vlan', d.vlan),
     vlInfo(d),
     has('vlans') ? fl('vlans') : '',
     d.vlans?.length ? vlSum() : '',
-    has('ssids') ? fl('ssids') : '',
+    has('ssids') ? fl('ssids') + wlSum(d) : '',
     d.t == 'router' ? fwBtn() : '',
   ].join('');
   const ports = portGrid(d) + (has('pg') ? fl('pg') : '') + (has('poew') ? fl('poew') : '') + pvTable(d);
@@ -2067,11 +2381,11 @@ function devProps(d) {
     + `<label>Typ zařízení<select data-f="t">${optionsHtml(T, d.t, v => v[1] + ' ' + v[0])}</select></label>`
     + icPicker(d)
     + sec('Údaje', info.map(fl).join(''))
-    + sec(has('ssids') ? 'Sítě a Wi-Fi' : 'Síť (VLAN)', nets)
+    + sec(has('ssids') || wlCan(d) ? 'Sítě a Wi-Fi' : 'Síť (VLAN)', nets)
     + sec('Porty', ports)
     + sec(`Spoje (${adjMap()[d.id].length})`, pwHtml() + (nb ? `<ul>${nb}</ul>` : '<p class="hint">Žádné. Shift+táhni na jiné zařízení.</p>'))
     + `<div class="row"><button data-act="dup">Duplikovat</button><button data-act="del" class="danger">Smazat</button></div>`
-    + `<p class="hint">ID: ${d.id}<br>Umístění vyber z prostorů půdorysu (bublina se tam v půdorysu přesune), nebo se vyplní samo po přetažení v půdorysu.</p>`;
+    + `<p class="hint">ID: ${d.id}${D.areas.length ? '' : '<br>Prostory (dům, patra, místnosti) založíš v 🏠 Prostory, umístění pak vybereš z nabídky.'}</p>`;
 }
 function linkProps(l) {
   const a = byId(l.a), b = byId(l.b), pl = pairLs(l), [u1, u2] = upFirst(l);
@@ -2092,41 +2406,16 @@ function linkProps(l) {
     + `<div class="row"><button data-sel="d:${l.a}">← ${esc(nm(a))}</button><button data-sel="d:${l.b}">${esc(nm(b))} →</button></div>`
     + `<div class="row"><button data-act="lpar" title="Další kabel mezi stejnými zařízeními (např. port 2 ↔ port 2)">+ souběžný spoj</button><button data-act="del" class="danger">Smazat spoj</button></div>`;
 }
-function areaProps(a) {
-  const inside = D.devices.filter(d => inA(a, PQ[d.id])), f = lvA(a);
-  const color = f
-    ? `<label>Barva patra „${esc(f)}“<span class="row"><input type="color" data-fc value="${flC(f)}" style="width:56px;height:28px;padding:0 2px">`
-      + `${A.some(b => b.lvl == f && b.fc) ? '<button data-act="fcx" title="Vrátit automatickou barvu z palety">Automaticky</button>' : ''}</span></label>`
-    : '';
-  return `<h3>${f ? `<span class="fdot" style="background:${flC(f)}"></span>` : '▭'} Prostor</h3>${field('n', a.n)}<label>Druh<select data-f="k">${optionsHtml(AK, a.k || 'room')}</select></label>`
-    + `<label>${FL.lvl}${lvlSel(a)}</label>`
-    + color
-    + `<h4>Zařízení uvnitř (${inside.length})</h4><ul>${inside.map(d => `<li data-sel="d:${d.id}">${icHtml(d)} ${esc(nm(d))}</li>`).join('')}</ul>`
-    + `<div class="row">${f ? '<button data-act="fdup" title="Zkopíruje všechny prostory tohoto podlaží (bez zařízení) vedle, jako základ dalšího podlaží">Kopie patra →</button>' : ''}<button data-act="del" class="danger">Smazat prostor</button></div>`
-    + `<p class="hint">Táhni za štítek = posun (i se zařízeními uvnitř), roh vpravo dole = velikost.<br>Podlaží obarví prostor i kroužky zařízení v něm; prostory uvnitř ho zdědí. Patra kresli vedle sebe; od dvou pater je v horní liště přepínač, který je filtruje v Půdorysu i Topologii.</p>`;
-}
-// výběr umístění zařízení: nakreslené prostory (hodnota a:id, popisek = cesta, u víc pater i podlaží), vlastní text
+// výběr umístění zařízení: strom prostorů (hodnota a:id, odsazení podle hloubky), nebo ručně psaný text
 function roomSel(d) {
-  const cur = A.filter(a => inA(a, PQ[d.id])).sort(bySz)[0], fs = flrs().length > 1;
-  const as = A.map(a => [a, aPath(a)]).sort((x, y) => x[1].localeCompare(y[1], 'cs'));
-  const isCur = a => a == cur && aPath(a) == d.room;
-  const own = d.room && !as.some(([a]) => isCur(a));  // ručně psané umístění mimo prostory
-  const opts = as.map(([a, p]) => {
-    const f = fs && lvA(a);
-    return `<option value="a:${a.id}"${isCur(a) ? ' selected' : ''}>${esc(p)}${f ? ` (${esc(f)})` : ''}</option>`;
-  }).join('');
+  const cur = area(d.ar), pad = h => '\u00a0\u00a0\u00a0'.repeat(h);
+  const opts = arTree().map(([a, h]) => `<option value="a:${a.id}"${a == cur ? ' selected' : ''}>${pad(h)}${AKI(a.k)} ${esc(a.n)}</option>`).join('');
+  const own = !cur && d.room;
   return `<label>${FL.room}<select data-f="room"><option value="">— žádné —</option>${opts}`
-    + `${own ? `<option value="${esc(d.room)}" selected>${esc(d.room)}</option>` : ''}`
-    + `<option value="">✎ Vlastní text…</option></select></label>`;
+    + `${own ? `<option value="${esc(d.room)}" selected>✎ ${esc(d.room)}</option>` : ''}`
+    + `<option value="\u0001">✎ Vlastní text…</option></select></label>`
+    + (cur ? `<p class="hint">${esc(aPath(cur))}</p>` : '');
 }
-// výběr podlaží prostoru: zděděné / existující podlaží / nové (zeptá se na název)
-function lvlSel(a) {
-  const inh = A.filter(b => b != a && b.lvl && inA(b, aCtr(a))).sort(bySz)[0]?.lvl;
-  const first = inh ? `— z nadřazeného prostoru: ${esc(inh)} —` : '— žádné —';
-  const opts = flrs().map(x => `<option value="${esc(x)}"${x == a.lvl ? ' selected' : ''}>${esc(x)}</option>`).join('');
-  return `<select data-f="lvl"><option value="">${first}</option>${opts}<option value="\u0001">+ Nové podlaží…</option></select>`;
-}
-const HELP_PLAN =`<h3>Půdorys</h3><p class="hint">• <b>▭ Nakreslit prostor</b> a táhni na ploše: dům, místnost, kůlna, garáž, zahrada. Prostory lze vnořovat (místnost v domě).<br>• Zařízení přetáhni do prostorů, jejich umístění se doplní samo (např. „Dům › Obývák“).<br>• Nová zařízení, která tu ještě nemají místo, čekají vlevo.<br>• Spoje jsou stejné jako v topologii, tady se jen jinak rozmístí.</p>`;
 const HELP_TOPO = `<h3>Topologie</h3><p class="hint">Klikni na zařízení nebo spoj.<br><br>• Zařízení přidáš kliknutím v levém panelu nebo přetažením na plochu.<br>• Spoj: Shift + táhni z jednoho zařízení na druhé (nebo zapni 🔗 Spojovat).<br>• Posun plochy: táhni prázdné místo.<br>• Typ spoje se odhadne, změníš ho po kliknutí na čáru.<br><br>Vyber složku 📁: ukládá se tam <b>network.json</b> (data), <b>layout.json</b> (rozložení) a <b>network.md</b> (čitelný přehled).</p>`;
 
 // export HTML jen na prohlížení: nápověda místo návodu k úpravám
@@ -2134,7 +2423,7 @@ function helpView() {
   const at = EMB?.at ? new Date(EMB.at).toLocaleString('cs', {dateStyle: 'medium', timeStyle: 'short'}) : '';
   return `<h3>${esc(EMB?.name || 'Mapa sítě')}</h3><p class="hint">Jen na prohlížení${at ? `, export ${at}` : ''}.<br><br>`
     + '• Klikni na zařízení nebo spoj, tady se ukážou jeho údaje.<br>• Posun: táhni prázdné místo, zoom kolečkem (na mobilu dvěma prsty), F = celá mapa.<br>'
-    + '• 🔗 Topologie / 🏠 Půdorys, 🗂 Vrstvy, 🏢 Patra a 🏷 VLAN přepínají, co je vidět.<br>'
+    + '• 👁 Zobrazení přepíná, co je vidět (vrstvy, sítě VLAN, prostory, popisky), 🏠 Prostory ukáže dům, patra a místnosti.<br>'
     + '• ✎ Upravit mapu odemkne. Uložit ji pak jde do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML.</p>';
 }
 // jen prohlížení: pole v panelu a v okně firewallu jdou číst, ne měnit; zůstanou výběr (data-sel) a akce z RO_ACT
@@ -2150,7 +2439,7 @@ function roLock(el) {
     if (!RO_ACT.includes(b.dataset.act) && b.matches('button')) b.hidden = true;
   }
 }
-const selObj = () => sel && (sel.k == 'd' ? byId(sel.id) : sel.k == 'l' ? lnk(sel.id) : area(sel.id));
+const selObj = () => sel && (sel.k == 'd' ? byId(sel.id) : lnk(sel.id));
 function select(k, id) {
   if (sel?.id != id) { icOpen = false; icQ = ''; }
   sel = {k, id};
@@ -2184,13 +2473,6 @@ function onPropsInput(e) {
     changed(1);
     return;
   }
-  // barva patra
-  if ('fc' in ds) {
-    if (!t._snap) { snap(); t._snap = 1; }
-    setFlC(lvA(o), t.value);
-    changed();
-    return;
-  }
   // port: v seznamu spojů zařízení (data-lp), nebo v panelu spoje (pa/pb)
   const portLink = ds.lp ? lnk(ds.lp) : sel.k == 'l' && /^p[ab]$/.test(ds.f) ? o : null;
   if (portLink) {
@@ -2201,59 +2483,56 @@ function onPropsInput(e) {
   }
   const f = ds.f;
   if (!f) return;
-  // umístění zařízení: prostor přesune bublinu v půdorysu, „Vlastní text…“ se zeptá na text
+  // umístění zařízení: prostor ze stromu, „Vlastní text…“ se zeptá na text
   if (sel.k == 'd' && f == 'room' && t.tagName == 'SELECT') {
     const a = t.value.startsWith('a:') ? area(t.value.slice(2)) : null;
-    if (a) roomMove(o, a);
-    else {
+    if (a) {
+      o.ar = a.id;
+      delete o.room;
+    } else {
       let nv = v;
-      if (t.value == '') {
-        const r = prompt('Místnost / umístění (mimo nakreslené prostory):', o.room || '');
+      if (t.value == '\u0001') {
+        const r = prompt('Místnost / umístění (mimo prostory):', o.room || '');
         if (r === null) { renderProps(); return; }
         nv = r.trim();
       }
+      delete o.ar;
       if (nv) o.room = nv; else delete o.room;
     }
     changed();
     renderProps();
     return;
   }
-  // podlaží prostoru: volba „+ Nové podlaží…“ se zeptá na název
-  if (sel.k == 'a' && f == 'lvl') {
-    let nv = v;
-    if (t.value == '\u0001') nv = (prompt('Název podlaží (např. Suterén, Přízemí, 1. patro):') || '').trim();
-    if (t.value == '\u0001' && !nv) { renderProps(); return; }
-    delete o.fc;  // nové podlaží převezme barvu toho, kam patří
-    if (nv) o.lvl = nv; else delete o.lvl;
-    assignRooms();
-    changed();
-    renderProps();
-    return;
-  }
   if (f == 'pp' && v) v = String(ppCount({pp: v}));  // 0–50
   if (v) o[f] = v;
-  else if (f != 't' && !(sel.k == 'a' && f == 'n')) delete o[f];  // typ a název prostoru nemažeme
+  else if (f != 't') delete o[f];  // typ nemažeme
+  if (f == 'ssid' && !v) delete o.bands;  // bez Wi-Fi nemá smysl ani pásmo
   if (sel.k == 'l' && f == 't') {
     if (!isPw(v)) lastLT = v;
     lyEnsure(lLy(o));
     renderProps();
   }
-  if (sel.k == 'a') assignRooms();
   if (sel.k == 'd' && f == 'n') $('#props h3 .dn').textContent = nm(o);  // název v nadpisu panelu
   changed();
-  if (f == 't' && sel.k == 'd' || f == 'k' && sel.k == 'a') renderProps();
+  if (f == 't' && sel.k == 'd') renderProps();
 }
 // po dopsání pole (change) překreslit panel tam, kde na hodnotě závisí jeho obsah (porty, PoE, patro, barva)
 function onPropsChange(e) {
   if (viewOnly) return;
   const t = e.target, ds = t.dataset;
-  if (ds.lf == 'vlans') {  // přejmenovaná síť: přepsat odkazy (původní hodnota je v defaultValue)
-    vlRename(t.defaultValue.trim(), t.value.trim());
+  if (ds.lf == 'vlans') {  // změněný název nebo ID: klíč sítě (vlK) před změnou a po ní, odkazy přepsat na nový
+    const v = selObj()?.vlans?.[ds.i];
+    if (v && ds.k != 'net') vlRename(vlK({...v, [ds.k]: t.defaultValue.trim()}), vlK(v));
     changed(1);
     return;
   }
-  const inputDeps = t.tagName == 'INPUT' && (ds.lp || ds.f == 'poew' || ds.f == 'pp' || 'fc' in ds);
-  if (inputDeps || ds.lf == 'pg' || ds.k == 'vlan' || sel?.k == 'l' && /^p[ab]$/.test(ds.f)) renderProps();
+  if (ds.lf == 'ssids' && ds.k == 'n') {  // přejmenované SSID: klienti za ním
+    wlRename(t.defaultValue.trim(), t.value.trim());
+    changed(1);
+    return;
+  }
+  const inputDeps = t.tagName == 'INPUT' && (ds.lp || ds.f == 'poew' || ds.f == 'pp');
+  if (inputDeps || ds.lf == 'pg' || ds.k == 'vlan' || ds.f == 'ssid' || ds.f == 'bands' || sel?.k == 'l' && /^p[ab]$/.test(ds.f)) renderProps();
 }
 function onPropsClick(e) {
   const s = e.target.closest('[data-sel]'), b = e.target.closest('[data-act]'), act = b?.dataset.act, ic = e.target.closest('[data-ic]'), o = selObj();
@@ -2298,9 +2577,8 @@ function onPropsClick(e) {
   else if (act == 'del') delSel();
   else if (act == 'dup') dup(sel.id);
   else if (act == 'lpar') addLink(o.a, o.b);
-  else if (act == 'fcx') { snap(); setFlC(lvA(o)); changed(1); }
-  else if (act == 'fdup') dupFloor(lvA(o));
   else if (act == 'fw') fwOpen();
+  else if (act == 'wlfix') { snap(); wlFix(); changed(1); }
   else if (act == 'pvt') { snap(); setPv(o, b.dataset.p, undefined, b.dataset.v); changed(1); }
   else if (act == 'pvo') pvOpen = !b.parentElement.open;
 }
@@ -2672,8 +2950,8 @@ const bkData = {};                            // načtené zálohy {net, lay} po
 // popisky polí, které FL nemá (nebo je má moc dlouhé)
 const BK_F = {
   n: 'název', t: 'typ', ic: 'ikona', img: 'obrázek', note: 'poznámka', pg: 'porty', pp: 'porty', pvl: 'VLANy na portech',
-  a: 'konec', b: 'konec', pa: 'port', pb: 'port', x: 'poloha', y: 'poloha', w: 'velikost', h: 'velikost',
-  k: 'druh', lvl: 'podlaží', fc: 'barva patra',
+  a: 'konec', b: 'konec', pa: 'port', pb: 'port', ar: 'prostor', par: 'umístění',
+  k: 'druh', fc: 'barva patra',
 };
 const bkFld = (k, kind) => kind == 'lnk' && k == 'w' ? 'odběr PoE' : BK_F[k] || FL[k]?.split(/ [(/]/)[0].toLowerCase() || k;
 // GET/POST api/…; 404 = null, 401 = přihlášení vypršelo
@@ -2697,14 +2975,14 @@ function bkAgo(s) {
 }
 // texty {net, lay} → seznamy pro porovnání (i starý layout {pos, view})
 function bkParse(f) {
-  const n = f?.net ? JSON.parse(f.net) : {}, l = f?.lay ? JSON.parse(f.lay) : {};
+  const l = f?.lay ? JSON.parse(f.lay) : {}, n = netUpgrade(f?.net ? JSON.parse(f.net) : {}, l);
   return {
     dev: n.devices || [],
     lnk: n.links || [],
     fw: n.fw || {},
-    area: l.plan?.areas || [],
-    pos: {topo: l.topo?.pos || l.pos || {}, plan: l.plan?.pos || {}},
-    wires: {topo: l.topo?.wires || {}, plan: l.plan?.wires || {}},
+    area: n.areas,
+    pos: l.topo?.pos || l.pos || {},
+    wires: l.topo?.wires || {},
   };
 }
 // seznamy s id: back = jen v záloze (obnova je vrátí), now = jen teď (obnova je smaže),
@@ -2730,7 +3008,7 @@ function bkDiff(f) {
     lnk: l => `${nm(devs[l.a])} ↔ ${nm(devs[l.b])}${l.t ? ` <span class="mu">(${esc(lType(l.t)[0])})</span>` : ''}`,
     area: a => esc(a.n || a.id),
   };
-  const heads = {dev: 'Zařízení', lnk: 'Spoje', area: 'Prostory v půdorysu'};
+  const heads = {dev: 'Zařízení', lnk: 'Spoje', area: 'Prostory'};
   let h = '', n = 0;
   for (const k of ['dev', 'lnk', 'area']) {
     const r = bkCmp(c[k], b[k], k), li = [];
@@ -2745,11 +3023,9 @@ function bkDiff(f) {
     if (li.length) h += `<h4>${heads[k]} (${li.length})</h4><ul>${li.join('')}</ul>`;
   }
   const other = [];
-  for (const [m, mn] of [['topo', 'v topologii'], ['plan', 'v půdorysu']]) {
-    const moved = Object.keys(b.pos[m]).filter(id => c.pos[m][id] && !jEq(b.pos[m][id], c.pos[m][id])).length;
-    if (moved) other.push(`${moved}× jiná pozice zařízení ${mn}`);
-    if (!jEq(b.wires[m], c.wires[m])) other.push(`jiné ruční polohy čar schématu ${mn}`);
-  }
+  const moved = Object.keys(b.pos).filter(id => c.pos[id] && !jEq(b.pos[id], c.pos[id])).length;
+  if (moved) other.push(`${moved}× jiná pozice zařízení`);
+  if (!jEq(b.wires, c.wires)) other.push('jiné ruční polohy čar schématu');
   if (!jEq(b.fw, c.fw)) {
     const cnt = x => `${x.rules?.length || 0} pravidel, ${x.fwd?.length || 0} přesměrování`;
     other.push(`firewall: teď ${cnt(c.fw)}, v záloze ${cnt(b.fw)}`);
@@ -2841,7 +3117,7 @@ async function bkRestore() {
     bkErr = 'obnova neproběhla: ' + e.message;
     return bkRender();
   }
-  const u = undo, cur = JSON.stringify([D, PT, PQ, A, WT, WQ]);
+  const u = undo, cur = JSON.stringify([D, PT, WT]);
   load(f.net, withMyView(f.lay));
   undo = [...u, cur];  // load undo maže, obnova se má dát vrátit
   changed(1);
@@ -2887,55 +3163,216 @@ function onBkClick(e) {
   }
 }
 
-// ---------- půdorys: prostory ----------
+// ---------- prostory: strom bez geometrie ----------
+// D.areas = [{id, n, k, par, fc}] v network.json: k = druh z AK (budova, podlaží, místnost, venku), par = id nadřazeného
+// prostoru (bez par = nejvyšší úroveň), pořadí v poli = pořadí mezi sourozenci. Patro je prostor druhu flr (k: 'flr'),
+// zařízení pod ním patří do patra. Zařízení odkazuje na prostor polem d.ar; d.room zůstává jen pro ručně psané
+// umístění mimo prostory. Spravuje se v okně 🏠 Prostory (#arDlg), zařízení dostane prostor v panelu (roomSel).
 
-// d.room = cesta prostorů, ve kterých zařízení leží („Dům › Obývák“); ručně psané umístění mimo prostory zůstane
-function assignRooms() {
-  const names = new Set(A.map(a => a.n));
-  for (const d of D.devices) {
-    const path = A.filter(a => inA(a, PQ[d.id])).sort(bySzDesc).map(a => a.n).join(' › ');
-    if (path) d.room = path;
-    else if (d.room && d.room.split(' › ').every(n => names.has(n))) delete d.room;
+// Převod starého formátu (prostory s polohou v layout.json plan.areas, pozice v půdorysu plan.pos) na strom:
+// rodič = nejmenší prostor, který prostor celý obsahuje; vlastní podlaží (lvl) místnosti vloží mezi ni a rodiče
+// uzel druhu flr (u budovy patro jde dovnitř, pro prostory v ní), zařízení dostane nejmenší prostor pod svou pozicí
+// v půdorysu. Pracuje s objekty (load, sloučení dat, porovnání záloh); stejná data dají stejná id.
+function arUpgrade(n, l) {
+  n.devices ??= [];
+  const old = l?.plan?.areas;
+  if (n.areas || !old?.length) {
+    n.areas ??= [];
+    return n;
   }
-}
-// cesta prostoru stejně jako v assignRooms („Dům › Obývák“)
-const aPath = a => A.filter(b => inA(b, aCtr(a))).sort(bySzDesc).map(b => b.n).join(' › ');
-// přesune zařízení v půdorysu do prostoru a (když v něm už není): volné místo mimo vnořené prostory, co nejdál od ostatních bublin, blízko středu
-function roomMove(d, a) {
-  const deep = p => A.filter(b => inA(b, p)).sort(bySz)[0];
-  if (deep(PQ[d.id]) == a) return;
-  const mx = Math.min(30, a.w / 2), my = Math.min(30, a.h / 2), [cx, cy] = aCtr(a);
-  const others = D.devices.filter(o => o != d && PQ[o.id]).map(o => PQ[o.id]);
-  let best = [g10(cx), g10(cy)], bs = -Infinity;
-  for (let x = a.x + mx; x <= a.x + a.w - mx; x += 10) {
-    for (let y = a.y + my; y <= a.y + a.h - my; y += 10) {
-      const p = [g10(x), g10(y)];
-      if (deep(p) != a) continue;
-      const near = Math.min(70, ...others.map(q => Math.hypot(q[0] - p[0], q[1] - p[1])));
-      const s = near * 1000 - Math.hypot(p[0] - cx, p[1] - cy);
-      if (s > bs) { bs = s; best = p; }
+  const inR = (a, p) => p && p[0] >= a.x && p[0] <= a.x + a.w && p[1] >= a.y && p[1] <= a.y + a.h;
+  const sz = a => a.w * a.h;
+  const holds = (b, a) => b != a && inR(b, [a.x, a.y]) && inR(b, [a.x + a.w, a.y + a.h]) && (sz(b) > sz(a) || sz(b) == sz(a) && old.indexOf(b) < old.indexOf(a));
+  const par = a => old.filter(b => holds(b, a)).sort((x, y) => sz(x) - sz(y))[0];
+  const lv = a => a.lvl || (par(a) ? lv(par(a)) : '');
+  const box = a => a.k == 'bld' || a.k == 'out';
+  const out = [], fl = {};
+  let nid = Math.max(0, ...old.map(a => +String(a.id).slice(1) || 0));
+  const floor = (pid, name, fc) => {
+    const k = (pid || '') + '|' + name;
+    if (!fl[k]) {
+      fl[k] = {id: 'a' + ++nid, n: name, k: 'flr', ...(pid ? {par: pid} : {}), ...(fc ? {fc} : {})};
+      out.push(fl[k]);
     }
+    return fl[k].id;
+  };
+  // patra na nejvyšší úrovni nejdřív a v pořadí podlaží (lvO)
+  const top = [...new Set(old.filter(a => a.lvl && !box(a) && !par(a)).map(a => a.lvl))].sort((x, y) => lvO(x) - lvO(y) || ncmp(x, y));
+  top.forEach(f => floor('', f, old.find(a => a.lvl == f && a.fc)?.fc));
+  for (const a of [...old].sort((x, y) => sz(y) - sz(x))) {  // rodiče dřív než děti
+    const p = par(a);
+    let pid = p?.id;
+    // budova (venku) s vlastním podlažím: prostory v ní, které ho dědí, jdou do patra uvnitř budovy
+    if (p && box(p) && p.lvl && lv(a) == p.lvl && !a.lvl) pid = floor(p.id, p.lvl, p.fc);
+    // místnost s podlažím jiným než okolí: patro mezi ní a rodičem
+    else if (a.lvl && !box(a) && a.lvl != (p ? lv(p) : '')) pid = floor(pid, a.lvl, a.fc);
+    else if (a.lvl && !box(a) && p && box(p) && p.lvl == a.lvl) pid = floor(p.id, p.lvl, p.fc);
+    out.push({id: a.id, n: a.n || a.id, k: a.k == 'flr' || !AK[a.k] ? 'room' : a.k, ...(pid ? {par: pid} : {})});
   }
-  PQ[d.id] = best;
-  assignRooms();
+  // pořadí: patra (jak vznikla) a pak prostory v původním pořadí
+  const ix = a => old.findIndex(b => b.id == a.id);
+  n.areas = [...out.filter(a => a.k == 'flr'), ...out.filter(a => a.k != 'flr').sort((x, y) => ix(x) - ix(y))];
+  const pos = l.plan.pos || {};
+  for (const d of n.devices) {
+    const a = old.filter(b => inR(b, pos[d.id])).sort((x, y) => sz(x) - sz(y))[0];
+    if (!a) continue;
+    d.ar = a.id;
+    delete d.room;  // dřív se z polohy psala cesta „Dům › Obývák“
+  }
+  return n;
 }
-// kopie patra vpravo vedle: všechny prostory podlaží f (bez zařízení), číslo podlaží +1 (jinak „(kopie)“)
-function dupFloor(f) {
-  if (!f) return;
+// děti prostoru (id, '' = nejvyšší úroveň) v pořadí
+const arKids = id => D.areas.filter(a => (a.par || '') == (id || ''));
+// strom do hloubky: [[prostor, hloubka], …]; prostor s neexistujícím rodičem jde na nejvyšší úroveň
+function arTree() {
+  const o = [], seen = new Set();
+  const walk = (a, h) => {
+    if (seen.has(a.id)) return;
+    seen.add(a.id);
+    o.push([a, h]);
+    arKids(a.id).forEach(c => walk(c, h + 1));
+  };
+  D.areas.filter(a => !a.par || !area(a.par)).forEach(a => walk(a, 0));
+  D.areas.forEach(a => walk(a, 0));  // pojistka: cyklus by se jinak ztratil
+  return o;
+}
+// cesta od kořene k prostoru (včetně), pojistka proti cyklu
+function arUp(a) {
+  const o = [];
+  for (let x = a; x && !o.includes(x); x = area(x.par)) o.unshift(x);
+  return o;
+}
+const aPath = a => arUp(a).map(b => b.n).join(' › ');
+// prostor a leží v b (nebo je to b)
+const arIn = (a, b) => !!a && arUp(a).includes(b);
+// umístění zařízení textem: cesta prostoru, jinak ručně psané
+const roomOf = d => area(d.ar) ? aPath(area(d.ar)) : d.room || '';
+// zařízení přímo v prostoru / i v prostorech uvnitř (deep)
+const arDevs = (a, deep) => D.devices.filter(d => deep ? arIn(area(d.ar), a) : d.ar == a.id);
+const AKI = k => (AK[k] || AK.room)[0];
+
+// Okno 🏠 Prostory: strom s druhem, názvem, barvou patra, počtem zařízení a akcemi:
+// ＋ prostor dovnitř, ↑↓ pořadí mezi sourozenci, ← o úroveň výš, → dovnitř předchozího sourozence, ⧉ kopie bez zařízení, × smazat
+function arOpen() {
+  arRender();
+  $('#arDlg').showModal();
+}
+function arRender() {
+  const rows = arTree().map(([a, h]) => {
+    const sib = arKids(a.par), i = sib.indexOf(a), nd = arDevs(a).length, nt = arDevs(a, 1).length;
+    const tip = arDevs(a).map(nm).join(', ');
+    const color = a.k == 'flr' ? `<input type="color" data-afc value="${flC(a.n)}" title="Barva patra „${esc(a.n)}“">` : '<span></span>';
+    const b = (act, t, title, off) => `<button class="mini" data-aa="${act}" title="${title}"${off ? ' disabled' : ''}>${t}</button>`;
+    return `<div class="arr" data-a="${a.id}" style="--h:${h}">`
+      + `<select data-af="k" title="Druh prostoru">${optionsHtml(AK, a.k || 'room', v => v[0] + ' ' + v[1])}</select>`
+      + `<input data-af="n" value="${esc(a.n)}" placeholder="název" autocomplete="off">${color}`
+      + `<span class="arc" title="${esc(tip ? 'Přímo tady: ' + tip : 'Přímo tady žádné zařízení')}">${nd}${nt > nd ? ` <span class="mu">(${nt})</span>` : ''}</span>`
+      + `<span class="fwa">${b('add', '＋', 'Přidat prostor dovnitř')}${b('up', '↑', 'Posunout výš', !i)}${b('down', '↓', 'Posunout níž', i == sib.length - 1)}`
+      + `${b('out', '←', 'O úroveň výš (za nadřazený prostor)', !a.par)}${b('in', '→', 'Dovnitř prostoru nad ním', !i)}`
+      + `${b('dup', '⧉', 'Kopie i s prostory uvnitř, bez zařízení (patro dostane další číslo)')}${b('del', '×', 'Smazat (prostory a zařízení uvnitř přejdou o úroveň výš)')}</span></div>`;
+  }).join('');
+  $('#arB').innerHTML = rows
+    ? `<div class="arr arh"><span>Druh</span><span>Název</span><span></span><span title="Zařízení přímo v prostoru (v závorce i v prostorech uvnitř)">Zařízení</span><span></span></div>${rows}`
+    : '<p class="hint">Zatím žádné prostory. ＋ Prostor přidá první, třeba „Dům“; do něj patra (Přízemí, 1. patro) a do nich místnosti. Zařízení pak dostane prostor v panelu vlastností.</p>';
+  roLock($('#arDlg'));
+}
+// nový prostor pod rodičem pid (bez pid nahoře), fokus do názvu
+function arAdd(pid) {
   snap();
-  const as = A.filter(a => lvA(a) == f), x0 = Math.min(...as.map(a => a.x)), dx = Math.max(...as.map(a => a.x + a.w)) - x0 + 80, fs = flrs();
-  let nf = /\d/.test(f) ? f.replace(/-?\d+/, m => +m + 1) : f + ' (kopie)';
-  while (fs.includes(nf)) nf += ' (kopie)';
-  let first;
-  for (const a of as) {
-    const b = {...a, id: nextId(A, 'a'), x: a.x + dx};
-    delete b.fc;
-    if (a.lvl) b.lvl = nf;
-    A.push(b);
-    if (a.lvl && !first) first = b;
-  }
-  sel = {k: 'a', id: (first || A.at(-1)).id};
+  const p = area(pid);
+  const k = !p ? 'bld' : p.k == 'bld' ? 'flr' : 'room';
+  const a = {id: nextId(D.areas, 'a'), n: k == 'flr' ? 'Přízemí' : k == 'bld' ? 'Dům' : 'Místnost', k, ...(pid ? {par: pid} : {})};
+  const last = D.areas.findLastIndex(x => arIn(x, p));
+  D.areas.splice(last < 0 ? D.areas.length : last + 1, 0, a);
   changed(1);
+  arRender();
+  const inp = $(`#arB [data-a="${a.id}"] [data-af="n"]`);
+  inp?.focus();
+  inp?.select();
+}
+// přesun položky a v poli D.areas těsně za (after) / před položku b
+function arPlace(a, b, after) {
+  D.areas.splice(D.areas.indexOf(a), 1);
+  D.areas.splice(D.areas.indexOf(b) + (after ? 1 : 0), 0, a);
+}
+// kopie prostoru i se vším uvnitř (bez zařízení); patro dostane další číslo („1. patro“ → „2. patro“), jinak „(kopie)“
+function arDup(a) {
+  snap();
+  const fs = flrs();
+  let n = a.k == 'flr' && /\d/.test(a.n) ? a.n.replace(/-?\d+/, m => +m + 1) : a.n + ' (kopie)';
+  while (a.k == 'flr' && fs.includes(n)) n += ' (kopie)';
+  const map = {}, copy = [];
+  for (const [x] of arTree()) {
+    if (!arIn(x, a)) continue;
+    map[x.id] = nextId([...D.areas, ...copy], 'a');
+    const c = {...x, id: map[x.id]};
+    if (map[x.par]) c.par = map[x.par];
+    if (x == a) c.n = n;
+    delete c.fc;
+    copy.push(c);
+  }
+  const last = D.areas.findLastIndex(x => arIn(x, a));
+  D.areas.splice(last + 1, 0, ...copy);
+  changed(1);
+  arRender();
+}
+// smazání: prostory uvnitř a zařízení přejdou do nadřazeného prostoru (nahoře zařízení prostor ztratí)
+function arDel(a) {
+  snap();
+  for (const c of arKids(a.id)) {
+    if (a.par) c.par = a.par;
+    else delete c.par;
+  }
+  for (const d of arDevs(a)) {
+    if (a.par) d.ar = a.par;
+    else delete d.ar;
+  }
+  D.areas = D.areas.filter(x => x != a);
+  changed(1);
+  arRender();
+}
+function onArClick(e) {
+  if (viewOnly) return;
+  const b = e.target.closest('[data-aa]'), a = area(e.target.closest('[data-a]')?.dataset.a);
+  if (!b || !a) return;
+  const act = b.dataset.aa, sib = arKids(a.par), i = sib.indexOf(a);
+  if (act == 'add') return arAdd(a.id);
+  if (act == 'dup') return arDup(a);
+  if (act == 'del') return arDel(a);
+  snap();
+  if (act == 'up') arPlace(a, sib[i - 1], 0);
+  else if (act == 'down') arPlace(a, D.areas.findLast(x => arIn(x, sib[i + 1])), 1);
+  else if (act == 'in') {
+    a.par = sib[i - 1].id;
+    arPlace(a, D.areas.findLast(x => x != a && arIn(x, sib[i - 1])), 1);
+  } else if (act == 'out') {
+    const p = area(a.par);
+    if (p.par) a.par = p.par;
+    else delete a.par;
+    arPlace(a, D.areas.findLast(x => x != a && arIn(x, p)), 1);
+  }
+  changed(1);
+  arRender();
+}
+// psaní v okně: název, druh, barva patra (snímek pro undo se dělá při vstupu do pole, viz napojení ovládání)
+function onArInput(e) {
+  if (viewOnly) return;
+  const t = e.target, a = area(t.closest('[data-a]')?.dataset.a);
+  if (!a) return;
+  if ('afc' in t.dataset) setFlC(a.n, t.value);
+  else if (t.dataset.af == 'k') a.k = t.value;
+  else if (t.dataset.af == 'n') a.n = t.value;
+  changed(1);
+  if (t.dataset.af == 'k') arRender();
+}
+// prázdný název po dopsání vrátit na druh prostoru
+function onArChange(e) {
+  const t = e.target, a = area(t.closest('[data-a]')?.dataset.a);
+  if (a && t.dataset.af == 'n' && !a.n.trim()) {
+    a.n = AK[a.k]?.[1].split(' ')[0] || 'Prostor';
+    t.value = a.n;
+    changed(1);
+  }
 }
 
 // ---------- úpravy: zařízení a spoje ----------
@@ -2953,7 +3390,6 @@ function addDev(t, x, y) {
   }
   P[d.id] = [g10(x), g10(y)];
   fixPos();
-  if (mode == 'plan') assignRooms();
   if (DLY[t]) lyEnsure(DLY[t]);
   sel = {k: 'd', id: d.id};
   icOpen = true;
@@ -2973,8 +3409,9 @@ function guessLT(a, b) {
   if (has('tbr') && !has('server', 'router', 'switch', 'ap', 'nas', 'pc', 'modem')) return 'thread';
   // AP↔AP, nebo router↔AP-satelit: mesh páteř (kabelovou páteř přepneš v panelu spoje)
   if (ts.every(t => t == 'ap' || t == 'router') && has('ap') && (ts.every(t => t == 'ap') || ds.some(d => /^sat/.test(d.mrole || '')))) return 'mesh';
-  if (has('phone', 'nb')) return 'wifi5';
-  if (has('iot')) return 'wifi24';
+  // k routeru/AP Wi-Fi (addLink z toho udělá SSID klienta, ne spoj)
+  if (has(...WL_HOST) && has('phone', 'nb')) return 'wifi5';
+  if (has(...WL_HOST) && has('iot')) return 'wifi24';
   return lastLT;
 }
 // Nový kabelový spoj: zařízení dál od kořene se k nadřazenému zapojí volným portem WAN / linka / uplink, má-li ho
@@ -2996,6 +3433,22 @@ function addLink(a, b) {
   snap();
   const id = nextId(D.links, 'l');
   const l = ex ? {id, a: ex.a, b: ex.b, t: parT(ex)} : {id, a, b, t: guessLT(a, b)};
+  // Wi-Fi klient k routeru/AP: místo spoje dostane SSID (vysílané tím routerem/AP, podle VLAN a pásma)
+  if (!ex && WL_LT.includes(l.t)) {
+    const [h, c] = WL_HOST.includes(byId(a).t) ? [byId(a), byId(b)] : [byId(b), byId(a)];
+    if (WL_HOST.includes(h.t) && wlCan(c)) {
+      const own = (h.ssids || []).filter(s => s.n);
+      const vl = c.vlan ? vlName(c.vlan) : '';
+      c.ssid = wlPick(own.length ? own : wlList(), vl, l.t == 'wifi24' ? '2.4' : '', vlName);
+      if (c.vlan && vlName(wlFind(c.ssid)?.vlan) == vl) delete c.vlan;
+      lyEnsure('wifi');
+      sel = {k: 'd', id: c.id};
+      changed(1);
+      saved = `📶 „${nm(c)}“ je Wi-Fi klient (${wlLab(c.ssid)}), Wi-Fi se spojem nekreslí`;
+      showStatus();
+      return;
+    }
+  }
   if (!ex) upPort(l);
   D.links.push(l);
   lyEnsure(lLy(l));
@@ -3010,17 +3463,13 @@ function delSel() {
     D.devices = D.devices.filter(d => d.id != id);
     D.links = D.links.filter(l => l.a != id && l.b != id);
     delete PT[id];
-    delete PQ[id];
   } else if (sel.k == 'l') {
     D.links = D.links.filter(l => l.id != id);
-  } else {
-    A = A.filter(a => a.id != id);
-    assignRooms();
   }
   sel = null;
   changed(1);
 }
-// kopie zařízení (bez IP a MAC, číslo v názvu +1) o kus vedle; má-li originál jediný spoj, zkopíruje i ten (bez portů)
+// kopie zařízení (bez IP, MAC a SN, číslo v názvu +1) o kus vedle; má-li originál jediný spoj, zkopíruje i ten (bez portů)
 function dup(id) {
   const s = byId(id);
   if (!s) return;
@@ -3028,23 +3477,22 @@ function dup(id) {
   const d = {...JSON.parse(JSON.stringify(s)), id: freeDevId(s.t)};
   delete d.ip;
   delete d.mac;
+  delete d.sn;
   if (d.n) d.n = d.n.replace(/(\d+)$/, m => +m + 1);
   D.devices.push(d);
-  for (const Q of [PT, PQ]) if (Q[id]) Q[d.id] = [Q[id][0] + 40, Q[id][1] + 40];
+  if (PT[id]) PT[d.id] = [PT[id][0] + 40, PT[id][1] + 40];
   const ls = D.links.filter(l => l.a == id || l.b == id);
   if (ls.length == 1) {
     const l = ls[0];
     D.links.push({...l, id: nextId(D.links, 'l'), a: l.a == id ? d.id : l.a, b: l.b == id ? d.id : l.b, pa: undefined, pb: undefined});
   }
-  assignRooms();
   sel = {k: 'd', id: d.id};
   changed(1);
 }
 
 // ---------- myš a klávesnice ----------
-// drag.m: 'node' posun zařízení, 'link' nový spoj, 'pan' posun plochy, 'wire' posun čáry schématu,
-//         'amove' posun prostoru (i s obsahem), 'ares' změna velikosti, 'anew' kreslení nového prostoru,
-//         'sel' jen výběr (zamčená mapa 🔒)
+// drag.m: 'node' posun zařízení, 'link' nový spoj, 'pan' posun plochy, 'wire' posun čáry schématu, 'grp' posun skupiny (rámeček),
+//         'pinch' zoom dvěma prsty, 'sel' jen výběr (zamčená mapa 🔒)
 
 // dotyk: aktivní prsty {pointerId: [x, y]}; dva prsty = zoom a posun plochy (drag.m 'pinch')
 const PTRS = new Map();
@@ -3075,13 +3523,10 @@ function onPointerDown(e) {
   if (PTRS.size == 2) { pinchStart(); cv.setPointerCapture(e.pointerId); return; }
   if (PTRS.size > 2 || e.button > 1) return;
   const t = e.target, [wx, wy] = toWorld(e), left = e.button == 0;
-  const ah = t.closest('[data-ah]'), ar = t.closest('[data-a]'), n = t.closest('[data-d]'), l = t.closest('[data-l]'), fo = t.closest('[data-flon]');
-  const wh = t.closest('[data-sg]');
-  if (left && fo) { delete flOff[fo.dataset.flon]; flSave(); render(); return; }  // štítek skrytého patra ho zobrazí
-  if (left && locked && (ar || ah || n)) {  // zamčeno: zařízení a prostor jde jen vybrat
+  const n = t.closest('[data-d]'), l = t.closest('[data-l]'), wh = t.closest('[data-sg]');
+  if (left && locked && n) {  // zamčeno: zařízení jde jen vybrat
     drag = {m: 'sel'};
-    if (n) select('d', n.dataset.d);
-    else select('a', ar ? ar.dataset.a : ah.dataset.ah);
+    select('d', n.dataset.d);
   } else if (left && wh && l && SCH[l.dataset.l]) {  // schéma: chycená čára (kmen, sběrnice, zub)
     const id = l.dataset.l, i = +wh.dataset.sg, key = wKey(id, i);
     // druhé klepnutí na stejný úsek do 400 ms = dvojklik: zpět na automatiku
@@ -3093,33 +3538,20 @@ function onPointerDown(e) {
     lastW = {key, t: e.timeStamp};
     drag = {m: 'wire', id, i, key, rt: SCH[id]};
     select('l', id);
-  } else if (left && ah) {
-    snap();
-    drag = {m: 'ares', id: ah.dataset.ah};
-    select('a', drag.id);
-  } else if (left && ar) {
-    const a = area(ar.dataset.a);
-    snap();
-    drag = {
-      m: 'amove', id: a.id, sx: wx, sy: wy, x: a.x, y: a.y,
-      ds: D.devices.filter(d => inA(a, PQ[d.id])).map(d => [d.id, ...PQ[d.id]]),                         // zařízení uvnitř
-      as: A.filter(b => b != a && inA(a, [b.x, b.y]) && inA(a, [b.x + b.w, b.y + b.h])).map(b => [b, b.x, b.y]),  // prostory uvnitř
-    };
-    select('a', a.id);
   } else if (left && n) {
     const id = n.dataset.d;
     drag = e.shiftKey || tool == 'link' ? {m: 'link', id, x: wx, y: wy} : {m: 'node', id, dx: wx - P[id][0], dy: wy - P[id][1]};
     select('d', id);
+  } else if (left && t.closest('[data-gf]')) {  // rámeček skupiny: kořen vybrat, celou skupinu táhnout
+    const i = +t.closest('[data-gf]').dataset.gf, f = GF[i];
+    if (f.id) select('d', f.id);
+    if (locked) drag = {m: 'sel'};
+    else drag = {m: 'grp', f: i, ids: f.ids, sx: wx, sy: wy, p0: f.ids.map(id => [...P[id]])};
   } else if (left && l) {
     select('l', l.dataset.l);
     if (isMob()) mobPanel('props');
     PTRS.delete(e.pointerId);
     return;
-  } else if (left && tool == 'area' && mode == 'plan') {
-    snap();
-    const a = {id: nextId(A, 'a'), n: 'Prostor ' + (A.length + 1), k: 'room', x: g10(wx), y: g10(wy), w: 0, h: 0};
-    A.push(a);
-    drag = {m: 'anew', id: a.id, ox: a.x, oy: a.y};
   } else {
     drag = {m: 'pan', sx: e.clientX - V.x, sy: e.clientY - V.y};
   }
@@ -3129,7 +3561,7 @@ function onPointerMove(e) {
   if (PTRS.has(e.pointerId)) PTRS.set(e.pointerId, [e.clientX, e.clientY]);
   if (drag?.m == 'pinch') { if (PTRS.size == 2) pinchMove(); return; }
   if (!drag) return;
-  const [wx, wy] = toWorld(e), d = drag, a = area(d.id);
+  const [wx, wy] = toWorld(e), d = drag;
   if (d.m == 'sel') return;
   if (d.m == 'node') {
     if (!d.mv) { snap(); d.mv = 1; }  // undo až při skutečném pohybu, ne při kliknutí
@@ -3137,26 +3569,14 @@ function onPointerMove(e) {
   } else if (d.m == 'wire') {
     if (!d.mv) { snap(); d.mv = 1; }
     wireMove(d, wx, wy);
+  } else if (d.m == 'grp') {  // celá skupina o stejný posun po mřížce 10 px (vzájemné polohy zůstanou)
+    const dx = g10(wx - d.sx), dy = g10(wy - d.sy);
+    if (!d.mv && !dx && !dy) return;
+    if (!d.mv) { snap(); d.mv = 1; }
+    d.ids.forEach((id, k) => P[id] = [d.p0[k][0] + dx, d.p0[k][1] + dy]);
   } else if (d.m == 'link') {
     d.x = wx;
     d.y = wy;
-  } else if (d.m == 'amove') {
-    const dx = g10(wx - d.sx), dy = g10(wy - d.sy);
-    a.x = d.x + dx;
-    a.y = d.y + dy;
-    d.ds.forEach(([id, x, y]) => PQ[id] = [x + dx, y + dy]);
-    d.as.forEach(([b, x, y]) => { b.x = x + dx; b.y = y + dy; });
-    d.mv = 1;
-  } else if (d.m == 'ares') {
-    a.w = Math.max(40, g10(wx - a.x));
-    a.h = Math.max(40, g10(wy - a.y));
-    d.mv = 1;
-  } else if (d.m == 'anew') {
-    const x = g10(wx), y = g10(wy);
-    a.x = Math.min(d.ox, x);
-    a.y = Math.min(d.oy, y);
-    a.w = Math.abs(x - d.ox);
-    a.h = Math.abs(y - d.oy);
   } else {  // pan
     V.x = e.clientX - d.sx;
     V.y = e.clientY - d.sy;
@@ -3183,24 +3603,12 @@ function onPointerUp(e) {
     if (t && t.dataset.d != d.id) addLink(d.id, t.dataset.d); else render();
     return;
   }
-  if (d.m == 'anew') {
-    const a = area(d.id);
-    if (a.w < 30 || a.h < 30) {  // jen kliknutí nebo moc malý: zahodit i se snímkem undo
-      A = A.filter(x => x != a);
-      undo.pop();
-      render();
-      return;
-    }
-    setTool(null);
-    sel = {k: 'a', id: a.id};
-  }
   if (d.m == 'pan') {
     if (!d.mv) { sel = null; render(); renderProps(); }  // klik do prázdna zruší výběr
     else scheduleSave();
     return;
   }
-  if (mode == 'plan' && (d.mv || d.m == 'anew')) { assignRooms(); renderProps(); }
-  if (d.mv || d.m == 'anew') changed(0);
+  if (d.mv) changed(0);
 }
 // Schéma: klíč ruční polohy pro úsek i spoje (0 = kmen, 1 = sběrnice, 2 = zub), viz W
 function wKey(id, i) {
@@ -3268,8 +3676,8 @@ function setLock(v) {
   b.textContent = locked ? '🔒' : '🔓';
   b.classList.toggle('on', !!locked);
   b.title = locked ? 'Mapa je zamčená: zařízení jde jen vybrat a upravit v panelu. Klikni pro odemčení.'
-    : 'Zamknout mapu, aby se nic nepohnulo omylem (zařízení, prostory, čáry schématu); klikat a upravovat v panelu půjde dál';
-  for (const id of ['#bLink', '#bArea', '#bLay']) $(id).disabled = !!locked;
+    : 'Zamknout mapu, aby se nic nepohnulo omylem (zařízení, rámečky skupin, čáry schématu); klikat a upravovat v panelu půjde dál';
+  for (const id of ['#bLink', '#bLay']) $(id).disabled = !!locked;
   if (locked) setTool(null);
   render();
 }
@@ -3290,7 +3698,7 @@ function onKeyDown(e) {
   const k = e.key.toLowerCase();
   if (k == 'escape') closeMenus();
   if (e.ctrlKey && k == 's') { e.preventDefault(); save(); return; }
-  if ($('#fwDlg').open || $('#scDlg').open || $('#bkDlg').open) {  // okno firewallu / skenu / záloh: jen Ctrl+Z mimo pole (Esc zavře okno samo), mapa nereaguje
+  if ($('#fwDlg').open || $('#scDlg').open || $('#bkDlg').open || $('#arDlg').open || $('#exDlg').open) {  // okno firewallu / skenu / záloh / prostorů / exportu: jen Ctrl+Z mimo pole (Esc zavře okno samo), mapa nereaguje
     if (e.ctrlKey && k == 'z' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); doUndo(); }
     return;
   }
@@ -3316,10 +3724,9 @@ function alignSnap(id, x, y) {
   }
   return [bx ?? g10(x), by ?? g10(y)];
 }
-// přizpůsobit pohled všem viditelným zařízením (v půdorysu i prostorům)
+// přizpůsobit pohled všem viditelným zařízením
 function fit() {
   const ps = Object.entries(P).filter(([id]) => VIS.has(id)).map(([, p]) => p);
-  if (mode == 'plan') A.filter(a => !flHid(lvA(a))).forEach(a => ps.push([a.x, a.y - 30], [a.x + a.w, a.y + a.h]));
   if (!ps.length) return;
   const r = cv.getBoundingClientRect(), xs = ps.map(p => p[0]), ys = ps.map(p => p[1]);
   const x0 = Math.min(...xs) - 70, x1 = Math.max(...xs) + 70, y0 = Math.min(...ys) - 50, y1 = Math.max(...ys) + 80;
@@ -3341,11 +3748,17 @@ const LAY_CH = 60;    // šířka svislého kanálu pro kmen k bezdrátovým kli
 const LAY_SH = 80;    // jediné dítě napájené shora jde o tolik vedle rodiče, aby zub napájení nevedl přes rodiče
 const LAY_WL = 200;   // horní řada bezdrátových klientů pod nejnižším zařízením stromu
 const LAY_ZZ = 110;   // svislý rozestup řad cik-caku (popisek horní řady skončí nad bublinou dolní)
-const LAY_BUS = 90;   // sběrnice bezdrátové skupiny nad horní řadou klientů (další skupiny vždy o 12 px výš)
+const LAY_BUS = 90;   // nejnižší sběrnice bezdrátové skupiny nad horní řadou klientů
+const LAY_WS = 12;    // další sběrnice bezdrátových skupin ve schodech o tolik výš
 const LAY_GAP = 12;   // mezera mezi popisky vedle sebe
 const LAY_VG = 40;    // mezera navíc mezi klienty z různých VLAN
 const LAY_BG = 28;    // nejmenší mezera mezi bublinami vedle sebe (kroužky kolem bublin pak dělí 20 px)
 const LAY_TG = 20;    // nejmenší mezera mezi popisky (názvy, IP) v řadě stromu
+const LAY_WB = 120;   // blok Wi-Fi: mezera pod nejnižším zařízením (jeho popisky) nad hlavičkou první řady skupin
+const LAY_WH = 50;    // výška hlavičky skupiny SSID nad středy bublin první řady
+const LAY_WR = 100;   // řady klientů ve skupině pod sebou (bublina, název, IP)
+const LAY_WG = 60;    // mezera mezi skupinami SSID vedle sebe
+const LAY_WY = 90;    // mezera mezi řadami skupin (pod popisky poslední řady klientů, nad další hlavičkou)
 
 // šířka textu v px (písmo jako popisky bublin), měří se na plátně mimo stránku
 let txtCtx = null;
@@ -3362,7 +3775,7 @@ const ipOrd = ip => /^\d+(\.\d+){3}$/.test(ip || '') ? ip.split('.').reduce((a, 
 // Graf pro uspořádání (datové spoje bez napájení a bez USB z UPS):
 // cl = bezdrátoví klienti (všechny datové spoje bezdrátové kromě mesh páteře a nejsou to síťové prvky z PR),
 // roots/kids/dep = kabelový strom (BFS od kořenů v pořadí orderRoots, děti seřazené podle portu rodiče),
-// wlk = {rodič: [klienti]}, wlc = {klient: [klienti, kteří visí jen na něm]},
+// wlk = {rodič: [klienti]}, wlc = {klient: [klienti, kteří visí jen na něm]}, wf = Wi-Fi klienti bez spojů (blok Wi-Fi),
 // att = {zařízení: [zdroje, které napájí jen ho]}, top = společné zdroje (jdou vpravo od kořene),
 // topFed = zařízení napájená ze společného zdroje
 function layGraph() {
@@ -3373,8 +3786,9 @@ function layGraph() {
     adj[l.a].push([l.b, l]);
     adj[l.b].push([l.a, l]);
   }
+  // klienti: jen bezdrátové spoje (kromě mesh), nebo Wi-Fi klient (d.ssid) bez datových spojů
   const cl = new Set(D.devices
-    .filter(d => !(d.t in PR) && adj[d.id].length && adj[d.id].every(([, l]) => isWl(l.t) && l.t != 'mesh'))
+    .filter(d => !(d.t in PR) && (adj[d.id].length ? adj[d.id].every(([, l]) => isWl(l.t) && l.t != 'mesh') : isWlc(d)))
     .map(d => d.id));
   const wired = id => adj[id].filter(([o]) => !cl.has(o)).map(([o]) => o);
   const hasCl = id => adj[id].some(([o]) => cl.has(o));
@@ -3400,8 +3814,13 @@ function layGraph() {
   }
 
   // rodič klienta = kabelové zařízení nejblíž ke kořeni; jiný soused než klient už ve stromu je vždy
-  const wlk = {}, wlc = {};
+  // Wi-Fi klient bez spoje k žádnému rodiči nepatří (přeskakuje mezi AP), jde do bloku Wi-Fi (wf)
+  const wlk = {}, wlc = {}, wf = [];
   for (const id of cl) {
+    if (!adj[id].length) {
+      wf.push(id);
+      continue;
+    }
     const ps = adj[id].map(([o]) => o).filter(o => o in dep).sort((a, b) => dep[a] - dep[b]);
     if (ps.length) (wlk[ps[0]] ??= []).push(id);
     else (wlc[adj[id][0][0]] ??= []).push(id);
@@ -3419,7 +3838,7 @@ function layGraph() {
   }
   top.sort((a, b) => pwRank(byId(a).t) - pwRank(byId(b).t) || cons[b].length - cons[a].length);
   const topFed = new Set(top.flatMap(s => cons[s]));
-  return {kids, dep, roots, wlk, wlc, att, top, topFed};
+  return {kids, dep, roots, wlk, wlc, wf, att, top, topFed};
 }
 
 // x poloh v cik-caku o k řadách (řada = i % k, 0 = horní): každý co nejblíž předchozímu tak, aby se popisky
@@ -3437,6 +3856,41 @@ function zigzag(ids, k, grp) {
     xs.push(x);
   });
   return xs;
+}
+
+// Blok Wi-Fi: skupina = klienti jednoho SSID (pořadí sítí podle wlList, pak „neuvedená“ a neznámé), uvnitř seřazení
+// VLAN → IP → název, v mřížce se stejně širokými sloupci (nejširší popisek); skupiny vedle sebe, nejvýš maxW na řadu,
+// každá řada skupin vycentrovaná na cx; y = středy bublin první řady (hlavička skupiny je nad nimi, wlHeads)
+function wlBlock(ids, pos, cx, y, maxW, vlIx) {
+  const by = {};
+  ids.forEach(id => (by[byId(id).ssid] ??= []).push(id));
+  const ss = wlList().map(s => s.n);
+  const gi = n => ss.includes(n) ? ss.indexOf(n) : n == WL_UNK ? ss.length : ss.length + 1;
+  const gs = Object.keys(by).sort((a, b) => gi(a) - gi(b) || ncmp(a, b)).map(n => {
+    const m = by[n].sort((a, b) => vlIx(a) - vlIx(b) || ipOrd(byId(a).ip) - ipOrd(byId(b).ip) || ncmp(nm(byId(a)), nm(byId(b))));
+    // sloupce: hlavička se musí vejít nad skupinu, řad zhruba odmocnina z třetiny počtu (široké, ne vysoké skupiny)
+    const rows = Math.max(1, Math.round(Math.sqrt(m.length / 3))), cols = Math.ceil(m.length / rows);
+    const cw = Math.max(...m.map(id => devW(byId(id))));
+    const w = Math.max(cols * cw, txtW(wlHeadTxt(n), '600 12px') + 2 * LAY_GAP);
+    return {m, cols, cw, w, rows: Math.ceil(m.length / cols)};
+  });
+  // řady skupin: dokud se vejdou do maxW
+  const lines = [];
+  for (const g of gs) {
+    const ln = lines.at(-1);
+    if (ln && ln.w + LAY_WG + g.w <= maxW) {
+      ln.gs.push(g);
+      ln.w += LAY_WG + g.w;
+    } else lines.push({gs: [g], w: g.w});
+  }
+  for (const ln of lines) {
+    let x = cx - ln.w / 2;
+    for (const g of ln.gs) {
+      g.m.forEach((id, i) => pos[id] = [x + (i % g.cols + .5) * g.cw, y + Math.floor(i / g.cols) * LAY_WR]);
+      x += g.w + LAY_WG;
+    }
+    y += (Math.max(...ln.gs.map(g => g.rows)) - 1) * LAY_WR + LAY_WY + LAY_WH;
+  }
 }
 
 function autoLayout() {
@@ -3555,19 +4009,28 @@ function autoLayout() {
     return i < 0 ? vo.length : i;
   };
   let right = -Infinity;
+  const wg = [], wcl = [];  // bezdrátové skupiny {p, t, tx: kmen, xs: zuby, lo–hi: rozsah sběrnice} a jejich klienti
   for (const p of Object.keys(G.wlk).filter(p => pos[p]).sort((a, b) => pos[a][0] - pos[b][0])) {
-    const seq = [];
-    const add = id => {
+    // typ spoje k rodiči (pořadí v L): klienti jednoho typu stojí u sebe, jinak by zuby jedné sběrnice křížily druhou
+    const tyIx = id => {
+      const l = D.links.find(l => isWl(l.t) && (l.a == p && l.b == id || l.b == p && l.a == id));
+      return l ? Object.keys(L).indexOf(l.t) : 99;
+    };
+    // gk = skupina pro mezeru v cik-caku (typ + VLAN); klient visící jen na jiném klientovi jde hned za něj
+    const seq = [], gk = {};
+    const add = (id, h) => {
       if (seq.includes(id)) return;
       seq.push(id);
-      (G.wlc[id] || []).forEach(add);
+      gk[id] = h ?? tyIx(id) * 1000 + vlIx(id);
+      (G.wlc[id] || []).forEach(c => add(c, gk[id]));
     };
     G.wlk[p]
-      .sort((a, b) => vlIx(a) - vlIx(b) || ipOrd(byId(a).ip) - ipOrd(byId(b).ip) || ncmp(nm(byId(a)), nm(byId(b))))
-      .forEach(add);
+      .sort((a, b) => tyIx(a) - tyIx(b) || vlIx(a) - vlIx(b) || ipOrd(byId(a).ip) - ipOrd(byId(b).ip) || ncmp(nm(byId(a)), nm(byId(b))))
+      .forEach(id => add(id));
     // dvě řady; když by byl cik-cak moc dlouhý, tak tři
-    let k = 2, zx = zigzag(seq, k, vlIx);
-    if (zx.at(-1) > maxW) zx = zigzag(seq, ++k, vlIx);
+    const grp = id => gk[id];
+    let k = 2, zx = zigzag(seq, k, grp);
+    if (zx.at(-1) > maxW) zx = zigzag(seq, ++k, grp);
     let off = pos[p][0] - (zx[0] + zx.at(-1)) / 2;
     // klient napájený shora nesmí stát přímo pod rodičem, jinak by zub napájení vedl přes jeho bublinu
     if (seq.some((id, i) => G.topFed.has(id) && Math.abs(zx[i] + off - pos[p][0]) < own(p) / 2 + 16)) off += LAY_SH;
@@ -3577,10 +4040,40 @@ function autoLayout() {
       pos[id] = [zx[i] + off, y0 + (i % k) * LAY_ZZ];
       right = Math.max(right, pos[id][0] + own(id) / 2);
     });
-    // sběrnice každé bezdrátové skupiny rodiče (typ spoje) těsně nad klienty, ne hned pod rodičem
+    // bezdrátové skupiny rodiče (typ spoje): sběrnice dostanou výšku až po rozmístění všech klientů
     const wl = D.links.filter(l => isWl(l.t) && [l.a, l.b].includes(p) && seq.includes(otherEnd(l, p)));
-    const ts = [...new Set(wl.map(l => l.t))];
-    ts.forEach((t, i) => bus[`${p}|d|${t}|b`] = Math.round(y0 - pos[p][1] - LAY_BUS - 12 * i));
+    for (const t of new Set(wl.map(l => l.t))) {
+      const xs = wl.filter(l => l.t == t).map(l => pos[otherEnd(l, p)][0]);
+      wg.push({p, t, tx: pos[p][0], xs, lo: Math.min(pos[p][0], ...xs), hi: Math.max(pos[p][0], ...xs), dn: []});
+    }
+    wcl.push(...seq);
+  }
+  // Sběrnice bezdrátových skupin ve schodech, aby kmen ani zub jedné skupiny nekřížil sběrnici jiné.
+  // Skupina a nad b: zuby a kříží sběrnici b a kmen b kříží sběrnici a; z dvojice s překryvem jde nahoru ta levnější.
+  const inS = (x, g) => x > g.lo + 2 && x < g.hi - 2;
+  const wCost = (a, b) => a.xs.filter(x => inS(x, b)).length + inS(b.tx, a);
+  wg.forEach((a, i) => wg.slice(i + 1).forEach(b => {
+    if (a.hi < b.lo - 8 || b.hi < a.lo - 8) return;
+    if (wCost(a, b) <= wCost(b, a)) a.dn.push(b);
+    else b.dn.push(a);
+  }));
+  // h = počet sběrnic pod skupinou (cyklus se přeskočí)
+  const hOf = g => {
+    if (g.h != null) return g.h;
+    g.h = -1;
+    return g.h = Math.max(-1, ...g.dn.map(d => d.h === -1 ? -1 : hOf(d))) + 1;
+  };
+  // víc než 4 schody: klienti níž, aby horní sběrnice nevjela do popisků stromu
+  const dy = Math.max(0, Math.max(0, ...wg.map(hOf)) - 3) * LAY_WS;
+  wcl.forEach(id => pos[id][1] += dy);
+  wg.forEach(g => bus[`${g.p}|d|${g.t}|b`] = Math.round(y0 + dy - pos[g.p][1] - LAY_BUS - LAY_WS * g.h));
+
+  // Wi-Fi klienti bez spojů: blok pod vším ostatním, skupiny po SSID
+  if (G.wf.length) {
+    const py = Object.values(pos).map(p => p[1]), px = Object.values(pos).map(p => p[0]);
+    const yW = (py.length ? Math.max(...py) + LAY_WB : 0) + LAY_WH;
+    const cx = px.length ? (Math.min(...px) + Math.max(...px)) / 2 : 0;
+    wlBlock(G.wf, pos, cx, yW, maxW, vlIx);
   }
 
   // zbytek (bez spojů, napájení bez spotřebiče…) v mřížce vpravo nahoře
@@ -3591,42 +4084,28 @@ function autoLayout() {
   render();
   fit();
 }
-// zařízení bez pozice: v topologii řady nahoře, v půdorysu sloupce vlevo od prostorů
+// zařízení bez pozice: řady nahoře
 function fixPos() {
-  const ax = Math.min(0, ...A.map(a => a.x)) - 140;
-  const free = (Q, f) => {
-    const used = new Set(Object.values(Q).map(p => p + ''));
-    for (let i = 0; ; i++) { const p = f(i); if (!used.has(p + '')) return p; }
+  const used = new Set(Object.values(PT).map(p => p + ''));
+  const free = () => {
+    for (let i = 0; ; i++) {
+      const p = [(i % 8) * 120, -200 - Math.floor(i / 8) * 110];
+      if (!used.has(p + '')) { used.add(p + ''); return p; }
+    }
   };
-  for (const d of D.devices) {
-    if (!PT[d.id]) PT[d.id] = free(PT, i => [(i % 8) * 120, -200 - Math.floor(i / 8) * 110]);
-    if (!PQ[d.id]) PQ[d.id] = free(PQ, i => [ax - Math.floor(i / 8) * 90, (i % 8) * 90]);
-  }
-}
-function setMode(m) {
-  mode = m;
-  alias();
-  setTool(null);
-  if (sel?.k == 'a' && m != 'plan') sel = null;
-  document.body.dataset.mode = m;
-  $('#mTopo').classList.toggle('on', m == 'topo');
-  $('#mPlan').classList.toggle('on', m == 'plan');
-  fixPos();
-  render();
-  renderProps();
+  for (const d of D.devices) if (!PT[d.id]) PT[d.id] = free();
 }
 function setTool(t) {
   tool = t;
   document.body.dataset.tool = t || '';
   $('#bLink').classList.toggle('on', t == 'link');
-  $('#bArea').classList.toggle('on', t == 'area');
 }
 
 // ---------- export: network.md (čitelný přehled pro lidi i Clauda) ----------
 
 // pole zařízení v přehledu: [pole, popisek]
 const MD_F = [['pubip', 'veřejná ip'], ['mrole', 'mesh'], ['va', 'výkon'], ['bat', 'výdrž min'], ['outl', 'zásuvek'], ['joule', 'absorpce J'],
-  ['ip', 'ip'], ['ssid', 'ssid'], ['chan', 'kanál'], ['poew', 'poe rozpočet W'],
+  ['ip', 'ip'], ['ssid', 'ssid'], ['bands', 'umí pásma'], ['chan', 'kanál'], ['poew', 'poe rozpočet W'],
   ['model', 'model'], ['sn', 'sn'], ['mac', 'mac'], ['room', 'místo'], ['vlan', 'vlan'], ['note', 'pozn']];
 // jeden řádek o zařízení: [id] typ "název" · pole:hodnota · …
 function desc(d) {
@@ -3634,7 +4113,10 @@ function desc(d) {
   if (d.wan) p.push('přípojka:' + d.wan);
   if (d.isp) p.push('isp:' + d.isp);
   if (d.down || d.up) p.push(`rychlost:${d.down || '?'}/${d.up || '?'} Mb/s`);
-  for (const [f, k] of MD_F) if (d[f]) p.push(k + ':' + String(d[f]).replace(/\s*\n\s*/g, '; '));
+  for (const [f, k] of MD_F) {
+    const v = f == 'room' ? roomOf(d) : f == 'ssid' && d.ssid == WL_UNK ? '(neuvedené)' : d[f];
+    if (v) p.push(k + ':' + String(v).replace(/\s*\n\s*/g, '; '));
+  }
   const vl = (d.vlans || []).filter(v => Object.keys(v).length), ss = (d.ssids || []).filter(s => Object.keys(s).length);
   if (vl.length) p.push('vlany:' + vl.map(v => [v.id, v.n, v.net].filter(Boolean).join(' ')).join(', '));
   if (portList(d).length) p.push('porty:' + portGroups(d).filter(x => x.ps.length).map(({g, ps}) => pgLab(g) + (ranges(ps) == g.r ? '' : ' ' + ranges(ps))).join(', '));
@@ -3682,11 +4164,11 @@ function portsMd() {
       + (vl ? ` · VLAN: ${vl}` : '');
   }).filter(Boolean);
 }
-// sekce Patra: podlaží → prostory a zařízení (podle polohy v půdorysu)
-function floorsMd() {
-  return flrs().map(f => {
-    const as = A.filter(a => lvA(a) == f), ds = D.devices.filter(d => flOf(PQ[d.id]) == f);
-    return `- ${f}: prostory ${as.map(a => a.n).join(', ')}; zařízení ${ds.length ? ds.map(d => d.id).join(', ') : '—'}`;
+// sekce Prostory: strom prostorů (odsazený), u každého zařízení přímo v něm
+function areasMd() {
+  return arTree().map(([a, h]) => {
+    const ds = arDevs(a).map(d => d.id);
+    return `${'  '.repeat(h)}- ${a.n}${a.k == 'flr' ? ' (podlaží)' : a.k == 'bld' ? ' (budova)' : a.k == 'out' ? ' (venku)' : ''}${ds.length ? ': ' + ds.join(', ') : ''}`;
   });
 }
 // sekce Firewall: pravidla v pořadí vyhodnocení, přesměrování portů, upozornění kontrol a poznámky
@@ -3721,8 +4203,11 @@ function md() {
   for (const d of orderRoots(adj)) {
     if (seen.has(d.id)) continue;
     seen.add(d.id);
-    // bez datových spojů: jen s napájením (do sekce Napájení), nebo úplně nepřipojené
-    if (!adj[d.id].length) { (D.links.some(l => l.a == d.id || l.b == d.id) ? pwOnly : iso).push(d); continue; }
+    // bez datových spojů: Wi-Fi klient (do sekce Wi-Fi), jen s napájením (do sekce Napájení), nebo úplně nepřipojené
+    if (!adj[d.id].length) {
+      if (!isWlc(d)) (D.links.some(l => l.a == d.id || l.b == d.id) ? pwOnly : iso).push(d);
+      continue;
+    }
     if (out.length) out.push('');
     walk(d.id, '', 1, null);
   }
@@ -3734,12 +4219,25 @@ function md() {
   const extra = D.links.filter(l => !isPw(l.t) && !used.has(l.id) && by[l.a] && by[l.b]).map(l => `- ${l.a} ↔ ${l.b} ${linkMd(l, l.a)}`);
   const section = (title, lines, show = lines.length) => show ? ['', title, ...lines] : [];
   const fw = fwMd();
+  // Wi-Fi: SSID a jeho klienti; klient zapojený i kabelem je celý ve stromu, tady jen odkaz
+  const wlc = D.devices.filter(isWlc), wlLine = d => adj[d.id].length ? `  - [${d.id}]${d.n ? ` "${d.n}"` : ''} (i kabelem, viz strom)` : '  - ' + desc(d);
+  const wifi = [...wlList(), {n: WL_UNK}].flatMap(s => {
+    const cs = wlc.filter(d => d.ssid == s.n);
+    if (!cs.length && s.n == WL_UNK) return [];
+    const hs = wlHosts(s.n).map(h => h.id);
+    const inf = [s.band, s.vlan && 'vlan ' + vlName(s.vlan), hs.length && 'vysílá ' + hs.join(', ')].filter(Boolean).join(' · ');
+    return [`- ${s.n == WL_UNK ? 'síť neuvedená' : `"${s.n}"`}${inf ? ` (${inf})` : ''}${cs.length ? '' : ': bez klientů'}`, ...cs.map(wlLine)];
+  });
+  // klienti s SSID, které nikdo nevysílá
+  const lost = wlc.filter(d => d.ssid != WL_UNK && !wlFind(d.ssid));
+  if (lost.length) wifi.push('- neznámé SSID', ...lost.map(wlLine));
   return [
     `# Mapa sítě (${new Date().toLocaleString('cs')})`,
     `Zařízení: ${D.devices.length} · spojů: ${D.links.length} · ─ kabel, ⇢ bezdrát, [id] typ "název"`,
     '', '```', ...out, '```',
+    ...section('## Wi-Fi (SSID a jeho klienti, Wi-Fi se spojem nekreslí)', wifi, wlc.length),
     ...section('## Porty (port→zařízení, ⚡ = PoE, VLAN: porty síť + tag tagované)', portsMd()),
-    ...section('## Patra', floorsMd()),
+    ...section('## Prostory (zařízení přímo v prostoru)', areasMd()),
     ...section('## Napájení (zdroj ⚡→ spotřebič)', [...pwOnly.map(d => '- ' + desc(d)), ...pw], pw.length),
     ...section('## Další spoje (smyčky / záložní cesty)', extra),
     ...section('## Nepřipojená zařízení', iso.map(d => '- ' + desc(d))),
@@ -3764,7 +4262,9 @@ function fwJSON() {
   if (D.fw?.note) p.push('"note":' + JSON.stringify(D.fw.note));
   return p.length ? `,\n"fw":{${p.join(',\n')}}` : '';
 }
-const netJSON = () => `{"v":2,\n"devices":[\n${D.devices.map(d => JSON.stringify(clean(d))).join(',\n')}\n],\n"links":[\n${D.links.map(l => JSON.stringify(clean(l))).join(',\n')}\n]${fwJSON()}}\n`;
+// v3: prostory jsou strom v network.json (dřív s polohou v layout.json, převádí arUpgrade)
+const netJSON = () => `{"v":3,\n"devices":[\n${D.devices.map(d => JSON.stringify(clean(d))).join(',\n')}\n],\n"links":[\n${D.links.map(l => JSON.stringify(clean(l))).join(',\n')}\n]`
+  + (D.areas.length ? `,\n"areas":[\n${D.areas.map(a => JSON.stringify(clean(a))).join(',\n')}\n]` : '') + `${fwJSON()}}\n`;
 // ruční polohy čar schématu: bez klíčů smazaných zařízení a spojů, prázdné se neukládají
 function wOut(w) {
   const o = Object.fromEntries(Object.entries(w).filter(([k]) => {
@@ -3773,7 +4273,7 @@ function wOut(w) {
   }));
   return Object.keys(o).length ? {wires: o} : {};
 }
-const layJSON = () => JSON.stringify({v: 2, topo: {view: VS.topo, pos: PT, ...wOut(WT)}, plan: {view: VS.plan, pos: PQ, ...wOut(WQ), areas: A}});
+const layJSON = () => JSON.stringify({v: 3, topo: {view: VS.topo, pos: PT, ...wOut(WT)}});
 
 // ---------- export: HTML (jeden soubor s vloženými daty, jen na prohlížení) ----------
 // Soubor = tato stránka (SRC0) + <script type="application/json"> s id EXP_ID v <head> s daty
@@ -3855,7 +4355,7 @@ function embKeep(old, s) {
 function setView(on) {
   viewOnly = on;
   document.body.classList.toggle('view', on);
-  for (const id of ['#bDir', '#bSave', '#bLink', '#bArea', '#bLay', '#bLock', '#lImp']) $(id).hidden = on;
+  for (const id of ['#bDir', '#bSave', '#bLink', '#bLay', '#bLock', '#lImp']) $(id).hidden = on;
   $('#bEdit').hidden = !on;
   setLock(on ? 1 : 0);
   renderProps();
@@ -4047,9 +4547,7 @@ const setBase = f => lsSet(lsK('netmapBase'), {net: f.net, lay: f.lay});
 // layout bez pohledu (zůstane jen schéma), pro porovnání
 function layCore(t) {
   const l = t ? JSON.parse(t) : {};
-  for (const m of ['topo', 'plan']) {
-    if (l[m]) l[m] = {...l[m], view: {sch: l[m].view?.sch}};
-  }
+  if (l.topo) l.topo = {...l.topo, view: {sch: l.topo.view?.sch}};
   return JSON.stringify(l);
 }
 function sameAsBase(f) {
@@ -4059,11 +4557,10 @@ function sameAsBase(f) {
 // cizí layout s pohledem tohoto zařízení (schéma zůstane z cizí verze)
 function withMyView(t) {
   const l = t ? JSON.parse(t) : {};
-  for (const m of ['topo', 'plan']) {
-    if (!l[m]) continue;
-    const v = {...VS[m]}, sch = l[m].view?.sch;
+  if (l.topo) {
+    const v = {...VS.topo}, sch = l.topo.view?.sch;
     delete v.sch;
-    l[m].view = sch ? {...v, sch} : v;
+    l.topo.view = sch ? {...v, sch} : v;
   }
   return JSON.stringify(l);
 }
@@ -4092,8 +4589,20 @@ const mItem = (b, l, r) => l && r ? mObj(b, l, r) : mVal(b, l, r);
 const idMap = a => Object.fromEntries((a || []).map(x => [x.id, x]));
 const mList = (b, l, r) => Object.values(mObj(idMap(b), idMap(l), idMap(r), mItem));
 // stejné id nově přidané na obou stranách (např. dvakrát „switch2“) = dvě různé věci: místní dostane nové id
+// přejmenuje id v klíčích ručních čar schématu (rodič|směr|typ|k/b/id spoje): část 0 = zařízení, 3 = spoj
+function wRename(lay, part, old, nid) {
+  const w = lay.topo?.wires;
+  if (!w) return;
+  for (const k of Object.keys(w)) {
+    const s = k.split('|');
+    if (s[part] != old) continue;
+    s[part] = nid;
+    w[s.join('|')] = w[k];
+    delete w[k];
+  }
+}
 function mRenameNew(b, l, r) {
-  const lists = x => [x.net.devices || [], x.net.links || [], x.lay.plan?.areas || []];
+  const lists = x => [x.net.devices || [], x.net.links || [], x.net.areas || []];
   const [bl, ll, rl] = [b, l, r].map(lists);
   for (let i = 0; i < 3; i++) {
     const bIds = new Set(bl[i].map(x => x.id)), rMap = idMap(rl[i]);
@@ -4106,52 +4615,59 @@ function mRenameNew(b, l, r) {
       const old = x.id, nid = pre + n;
       used.add(nid);
       x.id = nid;
+      if (i == 2) {  // prostor: přepsat odkazy místních zařízení a prostorů
+        for (const d of l.net.devices || []) if (d.ar == old) d.ar = nid;
+        for (const a of l.net.areas || []) if (a.par == old) a.par = nid;
+      }
+      if (i == 1) wRename(l.lay, 3, old, nid);  // spoj: klíč zubu ve schématu
       if (i) continue;
-      // zařízení: přepsat i místní spoje a pozice
+      // zařízení: přepsat i místní spoje a pozici
       for (const k of l.net.links || []) {
         if (k.a == old) k.a = nid;
         if (k.b == old) k.b = nid;
       }
-      for (const m of ['topo', 'plan']) {
-        const ps = l.lay[m]?.pos;
-        if (ps && old in ps) {
-          ps[nid] = ps[old];
-          delete ps[old];
-        }
+      const ps = l.lay.topo?.pos;
+      if (ps && old in ps) {
+        ps[nid] = ps[old];
+        delete ps[old];
       }
+      wRename(l.lay, 0, old, nid);
     }
   }
 }
 // třícestné sloučení textů {net, lay} → {net, lay}; bez base se nic nemaže (sjednocení, při rozporu místní)
 function mergeData(bS, lS, rS) {
   mergeN = 0;
-  const parse = x => ({net: x?.net ? JSON.parse(x.net) : {}, lay: x?.lay ? JSON.parse(x.lay) : {}});
+  // starý formát (prostory v layout.json) se nejdřív převede, ať se všechny tři strany porovnávají stejně
+  const parse = x => {
+    const lay = x?.lay ? JSON.parse(x.lay) : {};
+    return {net: netUpgrade(x?.net ? JSON.parse(x.net) : {}, lay), lay};
+  };
   const b = parse(bS), l = parse(lS), r = parse(rS);
   if (bS) mRenameNew(b, l, r);
   const net = mObj(b.net, l.net, r.net, (bv, lv, rv) => Array.isArray(lv ?? rv) ? [] : mVal(bv, lv, rv));
   net.devices = mList(b.net.devices, l.net.devices, r.net.devices);
   const ids = new Set(net.devices.map(d => d.id));
   net.links = mList(b.net.links, l.net.links, r.net.links).filter(x => ids.has(x.a) && ids.has(x.b));
-  const lay = {v: 2};
-  for (const m of ['topo', 'plan']) {
-    const pos = mObj(b.lay[m]?.pos, l.lay[m]?.pos, r.lay[m]?.pos);
-    for (const k in pos) {
-      if (!ids.has(k)) delete pos[k];
-    }
-    const view = {...l.lay[m]?.view}, sch = mVal(b.lay[m]?.view?.sch, l.lay[m]?.view?.sch, r.lay[m]?.view?.sch);
-    delete view.sch;
-    if (sch) view.sch = sch;
-    const wires = mObj(b.lay[m]?.wires, l.lay[m]?.wires, r.lay[m]?.wires);  // ruční polohy čar po klíčích
-    lay[m] = {view, pos, ...(Object.keys(wires).length ? {wires} : {})};
+  net.areas = mList(b.net.areas, l.net.areas, r.net.areas);
+  const T0 = x => x.lay.topo || {pos: x.lay.pos, view: x.lay.view};  // i layout v1 {pos, view}
+  const [bt, lt, rt] = [b, l, r].map(T0);
+  const pos = mObj(bt.pos, lt.pos, rt.pos);
+  for (const k in pos) {
+    if (!ids.has(k)) delete pos[k];
   }
-  lay.plan.areas = mList(b.lay.plan?.areas, l.lay.plan?.areas, r.lay.plan?.areas);
+  const view = {...lt.view}, sch = mVal(bt.view?.sch, lt.view?.sch, rt.view?.sch);
+  delete view.sch;
+  if (sch) view.sch = sch;
+  const wires = mObj(bt.wires, lt.wires, rt.wires);  // ruční polohy čar po klíčích
+  const lay = {v: 3, topo: {view, pos, ...(Object.keys(wires).length ? {wires} : {})}};
   return {net: JSON.stringify(net), lay: JSON.stringify(lay)};
 }
 // převezme data (sloučená nebo z NAS) a nechá výběr; panel se nepřekreslí, když se v něm zrovna píše
 function applyData(f) {
   const s = sel;
   load(f.net, f.lay);
-  if (s && (s.k == 'd' ? byId(s.id) : s.k == 'l' ? lnk(s.id) : area(s.id))) sel = s;
+  if (s && (s.k == 'd' ? byId(s.id) : lnk(s.id))) sel = s;
   render();
   if (!$('#props').contains(document.activeElement)) renderProps();
 }
@@ -4191,12 +4707,11 @@ function nasPull() {
 }
 // načtení z textu network.json a layout.json (i starých formátů)
 function load(net, lay) {
-  D = JSON.parse(net);
-  D.devices ??= [];
-  D.links ??= [];
   const l = lay ? JSON.parse(lay) : {};
+  D = netUpgrade(JSON.parse(net), l);  // prostory z dřívějšího půdorysu → strom, Wi-Fi spoje → d.ssid
+  D.links ??= [];
   const v1 = (D.v || 1) < 2;
-  D.v = 2;
+  D.v = 3;
   for (const d of D.devices) {  // starý formát: jedno SSID / VLAN v textovém poli
     const ex = T[d.t]?.[2] || [];
     if (v1) pgFromCount(d);  // verze 1: číslo ve skupině portů = počet
@@ -4205,25 +4720,17 @@ function load(net, lay) {
     if (d.ports || d.poe) pgFromOld(d);  // porty dřív jako text, teď skupiny d.pg
   }
   delete VS.topo.sch;
-  delete VS.plan.sch;
-  if (l.topo) {  // layout v2
+  if (l.topo) {  // layout v2/v3 (v2 měl navíc půdorys plan, ten se zahodí)
     PT = l.topo.pos || {};
-    PQ = l.plan?.pos || {};
     WT = l.topo.wires || {};
-    WQ = l.plan?.wires || {};
-    A = l.plan?.areas || [];
     Object.assign(VS.topo, l.topo.view);
-    Object.assign(VS.plan, l.plan?.view);
-  } else {       // layout v1: jen topologie {pos, view}
+  } else {       // layout v1 {pos, view}
     PT = l.pos || {};
-    PQ = {};
     WT = {};
-    WQ = {};
-    A = [];
     Object.assign(VS.topo, l.view);
   }
-  for (const a of A) if (a.k == 'flr') a.k = 'room';  // dřív bylo patro zvláštní druh prostoru, teď je to jen pole lvl
-  flSave();
+  for (const d of D.devices) if (d.ar && !area(d.ar)) delete d.ar;  // odkaz na smazaný prostor
+  arfSave();
   alias();
   fixPos();
   undo = [];
@@ -4316,7 +4823,7 @@ async function importFiles(e) {
   const s = emb?.strip || {}, miss = [s.fw && 'firewall', s.note && 'poznámky', s.mac && 'MAC'].filter(Boolean);
   if (emb && D.devices.length > 1 && !confirm(`Nahradit tuto mapu (${D.devices.length} zařízení) mapou „${emb.name || '?'}“ ze souboru?`
     + (miss.length ? `\nV exportu chybí ${miss.join(', ')}: u stejných zařízení zůstanou z této mapy.` : '') + '\nCtrl+Z import vrátí.')) return;
-  const old = D, u = [...undo, JSON.stringify([D, PT, PQ, A, WT, WQ])];
+  const old = D, u = [...undo, JSON.stringify([D, PT, WT])];
   load(net || netJSON(), lay || layJSON());
   undo = u;  // load undo maže, import se má dát vrátit
   if (emb) {
@@ -4361,11 +4868,13 @@ function obWhen(iso) {
 function obPreview(f) {
   const none = '<span class="hint">prázdná mapa</span>';
   if (!f) return none;
-  const keep = [lyOn, showPB, showLL, q];
+  const keep = [lyOn, vlOff, arF, showPB, showLL, showGF, q];
   try {
     load(f.net, f.lay);
     lyOn = Object.fromEntries(Object.keys(LY).map(k => [k, 1]));
-    showPB = showLL = false;
+    vlOff = {};
+    arF = {off: {}, hide: 0};
+    showPB = showLL = showGF = false;
     q = '';
     render();
     const ps = D.devices.filter(d => VIS.has(d.id) && P[d.id]).map(d => P[d.id]);
@@ -4378,7 +4887,7 @@ function obPreview(f) {
   } catch {
     return none;
   } finally {
-    [lyOn, showPB, showLL, q] = keep;
+    [lyOn, vlOff, arF, showPB, showLL, showGF, q] = keep;
   }
 }
 // vlastní obrázek náhledu: zmenšit do 800 × 600 (WebP, jinak JPEG), do okna ✎ přes obImg
@@ -4567,14 +5076,13 @@ document.addEventListener('visibilitychange', nasPull);
 setInterval(nasPull, 30000);
 $('#bNasMine').onclick = nasMine;
 $('#bMd').onclick = async () => { await navigator.clipboard.writeText(md()); saved = 'přehled zkopírován do schránky'; showStatus(); };
-$('#mTopo').onclick = () => setMode('topo');
-$('#mPlan').onclick = () => setMode('plan');
-$('#ddFl .menu').onclick = onFloorClick;
-$('#fl').onchange = onFloorChange;
-$('#ddVl .menu').onclick = onVlClick;
-$('#vlF').onchange = onVlChange;
+$('#bAr').onclick = arOpen;
+$('#vwM').onclick = onVwClick;
+$('#vwM').onchange = onVwChange;
+$('#cGF').checked = !!showGF;
+$('#ddView').addEventListener('toggle', vwPlace);
+addEventListener('resize', vwPlace);
 $('#bLink').onclick = () => setTool(tool == 'link' ? null : 'link');
-$('#bArea').onclick = () => setTool(tool == 'area' ? null : 'area');
 $('#bLay').onclick = autoLayout;
 $('#bFit').onclick = fit;
 $('#bLock').onclick = () => setLock(!locked);
@@ -4582,19 +5090,6 @@ $('#bTheme').onclick = nextTheme;
 $('#bSch').onclick = () => { if (V.sch) delete V.sch; else V.sch = 1; render(); scheduleSave(); };
 $('#qs').oninput = e => { q = e.target.value; render(); };
 
-// nabídka Vrstvy
-$('#ly').innerHTML = Object.entries(LY).map(([k, n]) => `<label><input type="checkbox" data-ly="${k}"${lyOn[k] ? ' checked' : ''}> ${n}</label>`).join('');
-$('#ly').onchange = e => { const k = e.target.dataset.ly; if (!k) return; lyOn[k] = e.target.checked ? 1 : 0; lySave(); render(); };
-$('#lyAll').onclick = e => {
-  e.preventDefault();
-  for (const k in LY) lyOn[k] = 1;
-  document.querySelectorAll('[data-ly]').forEach(c => c.checked = true);
-  lySave();
-  render();
-};
-$('#cLL').onchange = e => { showLL = e.target.checked; render(); };
-$('#cPB').onchange = e => { showPB = e.target.checked; render(); };
-$('#cPL').onchange = e => { showPL = e.target.checked; render(); };
 
 // levá paleta: zařízení (klik nebo přetažení na plochu) a legenda spojů
 $('#pal').innerHTML = '<h4>Zařízení</h4>'
@@ -4644,6 +5139,14 @@ $('#scGo').onclick = scGo;
 $('#scX').onclick = () => $('#scDlg').close();
 $('#scDlg').addEventListener('click', onScClick);
 $('#scDlg').addEventListener('close', () => clearTimeout(scT));
+// okno prostorů
+$('#arDlg').addEventListener('focusin', e => { if (e.target.matches('input,select')) snap(); });
+$('#arDlg').addEventListener('input', onArInput);
+$('#arDlg').addEventListener('change', onArChange);
+$('#arB').addEventListener('click', onArClick);
+$('#arDlg').addEventListener('close', renderProps);
+$('#arAdd').onclick = () => arAdd();
+$('#arX').onclick = () => $('#arDlg').close();
 $('#bBk').onclick = bkOpen;
 $('#bkX').onclick = () => $('#bkDlg').close();
 $('#bkDlg').addEventListener('click', onBkClick);
