@@ -28,7 +28,7 @@ It draws the network as a **topology**: a tree from the internet down to every d
 
 ### Quick start
 1. Open `mapa.html` in Chrome or Edge (folder saving needs the File System Access API).
-2. Click 📁 and pick the `ukazka/` folder to load the **demo network**: a fictional family house with 45 devices, 5 VLANs, 3 floors, a garage, and a firewall.
+2. Click 📁 and pick the `ukazka-en/` folder to load the **demo network**: a fictional family house with 45 devices, 5 VLANs, 3 floors, a garage, and a firewall.
 3. For your own network, pick an empty folder (e.g. `data/`). Without a folder, the map is saved in the browser's localStorage.
 
 The editor saves three files: `network.json` (devices and links), `layout.json` (positions), and `network.md` (the generated text overview).
@@ -70,7 +70,7 @@ Síť kreslí jako **topologii**: strom od internetu ke každému zařízení, s
 
 ### Jak začít
 1. Otevři `mapa.html` v Chrome nebo Edge (ukládání do složky potřebuje File System Access API).
-2. Přes 📁 vyber složku `ukazka/` a načte se **ukázková síť**: fiktivní rodinný dům se 45 zařízeními, 5 VLANami, 3 podlažími, garáží a firewallem.
+2. Přes 📁 vyber složku `ukazka/` a načte se **ukázková síť**: fiktivní rodinný dům se 45 zařízeními, 5 VLANami, 3 podlažími, garáží a firewallem (anglicky ve složce `ukazka-en/`).
 3. Pro vlastní síť vyber prázdnou složku (např. `data/`, je v `.gitignore`). Bez složky se mapa ukládá do localStorage prohlížeče.
 
 Editor ukládá tři soubory: `network.json` (zařízení a spoje), `layout.json` (pozice) a `network.md` (vygenerovaný textový přehled).

@@ -2,7 +2,8 @@
 
 Spuštění serveru:  uvicorn app:app --host 0.0.0.0 --port 8780
 Nastavení účtu:    python app.py passwd | python app.py 2fa on | python app.py 2fa off
-Ukázková síť:      python app.py demo
+Ukázková síť:      python app.py demo [cs|en]
+Jazyk příkazové řádky: NETMAP_LANG=cs|en, jinak podle LANG (cs/sk = čeština, jinak angličtina).
 
 Návrh je v docs/nas.md. Server data nikdy sám nemění: network.md generuje prohlížeč.
 Data jsou po objektech (dům, chata…): data/<id>/ s vlastními soubory a zálohami.
@@ -58,12 +59,40 @@ NAME_MAX = 60
 DESC_MAX = 300
 IMG_MAX = 500_000           # vlastní obrázek náhledu (data URL, editor ho zmenší na 800 px), '' = náhled z topologie
 IMG_RE = re.compile(r'data:image/(webp|png|jpeg);base64,[A-Za-z0-9+/=]+')
-FIRST = 'Domov'             # první objekt, do kterého se převedou data z doby před objekty
-DEMO = Path(os.environ.get('NETMAP_DEMO', ROOT / 'ukazka'))  # fiktivní síť pro objekt „Ukázka“
-DEMO_NAME = 'Ukázka'
-DEMO_DESC = 'Fiktivní síť na vyzkoušení editoru'
+LANGS = ('cs', 'en')         # jazyky stránek a ukázky; editor posílá ruční volbu v cookie LANG_COOKIE
+LANG_COOKIE = 'netmapLang'
+FIRST = {'cs': 'Domov', 'en': 'Home'}  # první objekt (převod dat z doby před objekty jde vždy do „Domov“)
+DEMO = Path(os.environ.get('NETMAP_DEMO', ROOT / 'ukazka'))  # fiktivní síť pro objekt „Ukázka“, anglická vedle s -en
+DEMO_NAME = {'cs': 'Ukázka', 'en': 'Demo'}
+DEMO_DESC = {'cs': 'Fiktivní síť na vyzkoušení editoru', 'en': 'Fictional network to try out the editor'}
 
 # ---------- pomocné funkce ----------
+
+
+def lang_of(cookie, accept):
+    """Jazyk stránky: ruční volba z editoru (cookie), jinak první jazyk prohlížeče
+    (Accept-Language podle q; cs/sk = čeština, jinak angličtina), stejně jako editor."""
+    if cookie in LANGS:
+        return cookie
+    best, bq = '', -1.0
+    for part in (accept or '').split(','):
+        tag, _, q = part.strip().partition(';q=')
+        try:
+            q = float(q) if q else 1.0
+        except ValueError:
+            continue
+        if tag and q > bq:
+            best, bq = tag.lower(), q
+    return 'cs' if re.match(r'(cs|sk)(-|$)', best) else 'en'
+
+
+# jazyk příkazové řádky
+CLI_LANG = lang_of(os.environ.get('NETMAP_LANG'), os.environ.get('LANG', '').split('.')[0].replace('_', '-'))
+
+
+def tl(cs, en):
+    """Hláška příkazové řádky v jejím jazyce."""
+    return cs if CLI_LANG == 'cs' else en
 
 
 def read_text(p):
@@ -319,27 +348,51 @@ def obj_delete(d):
     os.replace(d, DELETED / f'{d.name}_{datetime.now().strftime(STAMP)}')
 
 
-def demo_new():
-    """Objekt „Ukázka“ s fiktivní sítí ze složky ukazka/. Když složka chybí, vrátí None."""
-    texts = {n: read_text(DEMO / n) for n in FILES.values()}
+def demo_dir(lang):
+    """Složka ukázky v jazyce: ukazka/ (čeština), ukazka-en/ (angličtina); chybějící = česká."""
+    d = DEMO if lang == 'cs' else DEMO.with_name(f'{DEMO.name}-{lang}')
+    return d if (d / FILES['net']).exists() else DEMO
+
+
+def demo_new(lang='cs'):
+    """Objekt „Ukázka“ / „Demo“ s fiktivní sítí ze složky ukázky. Když složka chybí, vrátí None."""
+    src = demo_dir(lang)
+    texts = {n: read_text(src / n) for n in FILES.values()}
     if not texts[FILES['net']]:
         return None
-    return obj_new(DEMO_NAME, desc=DEMO_DESC, texts={n: t for n, t in texts.items() if t})
+    return obj_new(DEMO_NAME[lang], desc=DEMO_DESC[lang], texts={n: x for n, x in texts.items() if x})
+
+
+_fresh = False  # prázdný server: první objekty se založí až v jazyce prvního, kdo otevře přehled
+
+
+def fresh_start(lang):
+    """Na prázdném serveru (po startu) založí prázdný „Domov“ s NAS a ukázku v jazyce lang."""
+    global _fresh
+    with _obj_lock:
+        if not _fresh:
+            return
+        _fresh = False
+        if obj_dirs():
+            return
+        obj_new(FIRST[lang], nas=True)
+        demo_new(lang)
 
 
 def migrate():
     """Při startu: data z doby před objekty (data/network.json, layout.json, network.md, backup/)
-    se přesunou do prvního objektu „Domov“ s NAS. Prázdný server dostane prázdný „Domov“
-    a k němu objekt „Ukázka“."""
+    se přesunou do prvního objektu „Domov“ s NAS. Prázdný server dostane prázdný „Domov“ a k němu
+    objekt „Ukázka“ až při prvním otevření přehledu (fresh_start), aby byly v jazyce prohlížeče."""
+    global _fresh
     with _obj_lock:
         if obj_dirs():
             return
         DATA.mkdir(parents=True, exist_ok=True)
         old = [DATA / n for n in FILES.values()] + [DATA / 'backup']
-        fresh = not any(f.exists() for f in old)
-        obj_new(FIRST, nas=True, files=old)
-        if fresh:
-            demo_new()
+        if any(f.exists() for f in old):
+            obj_new(FIRST['cs'], nas=True, files=old)
+        else:
+            _fresh = True
 
 
 # ---------- zálohy ----------
@@ -537,6 +590,9 @@ if __name__ != '__main__':
         local = req.client and req.client.host in ('127.0.0.1', '::1')
         return bool(local and req.headers.get('x-forwarded-proto') == 'https')
 
+    def req_lang(req):
+        return lang_of(req.cookies.get(LANG_COOKIE), req.headers.get('accept-language'))
+
     def err(code, msg, **kw):
         return JSONResponse({'error': msg, **kw}, status_code=code)
 
@@ -550,9 +606,11 @@ if __name__ != '__main__':
         if p in PUBLIC:
             return await call_next(req)
         if not auth():
-            return err(503, 'setup') if api else HTMLResponse(SETUP_HTML, status_code=503)
+            return err(503, 'setup') if api else HTMLResponse(SETUP_HTML[req_lang(req)], status_code=503)
         if not session_ok(req.cookies.get(COOKIE)):
-            return err(401, 'login') if api else HTMLResponse(LOGIN_HTML, status_code=401, headers={'Cache-Control': 'no-store'})
+            if api:
+                return err(401, 'login')
+            return HTMLResponse(LOGIN_HTML[req_lang(req)], status_code=401, headers={'Cache-Control': 'no-store'})
         return await call_next(req)
 
     @app.middleware('http')
@@ -569,10 +627,10 @@ if __name__ != '__main__':
         return {'app': 'netmap', 'ok': True}
 
     @app.get('/')
-    def index():
+    def index(req: Request):
         f = WWW / 'mapa.html'
         if not f.exists():
-            return HTMLResponse('Chybí www/mapa.html', status_code=500)
+            return HTMLResponse('Chybí www/mapa.html' if req_lang(req) == 'cs' else 'Missing www/mapa.html', status_code=500)
         return FileResponse(f, media_type='text/html; charset=utf-8', headers={'Cache-Control': 'no-cache'})
 
     @app.get('/mapa.html')
@@ -640,7 +698,8 @@ if __name__ != '__main__':
         return b
 
     @app.get('/api/objects')
-    def objects_get():
+    def objects_get(req: Request):
+        fresh_start(req_lang(req))
         return objects()
 
     @app.post('/api/objects')
@@ -793,9 +852,11 @@ if __name__ != '__main__':
 
 
 # ---------- stránky (přihlášení, nastavení) ----------
+# Každá stránka je ve dvou jazycích (LOGIN_HTML['cs'|'en']), vybírá req_lang. Přepínač CZ/EN vpravo nahoře
+# zapíše volbu stejně jako editor (cookie netmapLang a localStorage) a stránku obnoví.
 
-PAGE = '''<!doctype html><html lang="cs"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Mapa sítě</title>
+PAGE = '''<!doctype html><html lang="LANG"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>TITLE</title>
 <style>
 :root{--bg:#f4f5f7;--pn:#fff;--tx:#1d2330;--mu:#6b7280;--bd:#d6d9e0;--ac:#2563eb;--er:#c2410c}
 @media (prefers-color-scheme:dark){:root{--bg:#14171d;--pn:#1d2129;--tx:#e6e8ec;--mu:#9aa1ad;--bd:#343a46;--ac:#60a5fa;--er:#fb923c}}
@@ -805,16 +866,52 @@ h1{font-size:18px;margin:0 0 16px}
 label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
 input{width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
 button{margin-top:16px;width:100%;padding:9px;border:0;border-radius:6px;background:var(--ac);color:#fff;font:inherit;cursor:pointer}
+#lang{position:fixed;top:12px;right:12px;width:auto;margin:0;padding:4px 9px;background:var(--pn);color:var(--tx);border:1px solid var(--bd);font-size:13px}
 #msg{color:var(--er);font-size:13px;min-height:18px;margin-top:10px}
 code{font-size:13px}
-</style></head><body>BODY</body></html>'''
+</style></head><body>
+<button id="lang" type="button" title="SWITCH">OTHER</button>
+BODY
+<script>
+document.getElementById('lang').onclick = () => {
+  const l = 'LANG' == 'cs' ? 'en' : 'cs';
+  document.cookie = 'netmapLang=' + l + '; path=/; max-age=31536000; samesite=strict';
+  try { localStorage.setItem('netmapLang', JSON.stringify(l)); } catch {}
+  location.reload();
+};
+</script></body></html>'''
 
-LOGIN_HTML = PAGE.replace('BODY', '''<form id="f">
-<h1>🖧 Mapa sítě</h1>
-<label>Jméno<input name="user" autocomplete="username" required autofocus></label>
-<label>Heslo<input name="pass" type="password" autocomplete="current-password" required></label>
-<div id="cd" hidden><label>Kód z aplikace (2FA)<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label></div>
-<button>Přihlásit</button>
+PT = {
+    'cs': {
+        'TITLE': 'Mapa sítě', 'OTHER': 'EN', 'SWITCH': 'English',
+        'user': 'Jméno', 'pass': 'Heslo', 'code': 'Kód z aplikace (2FA)', 'go': 'Přihlásit',
+        'wait': 'Moc pokusů, zkus to znovu za ${j.wait} s.', 'wrong': 'Špatné jméno, heslo nebo kód.',
+        'server': 'Chyba serveru (', 'setup1': 'Účet ještě není nastavený. V terminálu kontejneru spusť:',
+        'setup2': 'a pak tuto stránku obnov.',
+    },
+    'en': {
+        'TITLE': 'Network map', 'OTHER': 'CZ', 'SWITCH': 'Čeština',
+        'user': 'User name', 'pass': 'Password', 'code': 'Code from the app (2FA)', 'go': 'Sign in',
+        'wait': 'Too many attempts, try again in ${j.wait} s.', 'wrong': 'Wrong user name, password or code.',
+        'server': 'Server error (', 'setup1': 'The account is not set up yet. In the container terminal run:',
+        'setup2': 'and then reload this page.',
+    },
+}
+
+
+def page(lang, body):
+    s = PAGE.replace('BODY', body).replace('LANG', lang)
+    for k, v in PT[lang].items():
+        s = s.replace(k if k.isupper() else '{' + k + '}', v)
+    return s
+
+
+LOGIN = '''<form id="f">
+<h1>🖧 {TITLE}</h1>
+<label>{user}<input name="user" autocomplete="username" required autofocus></label>
+<label>{pass}<input name="pass" type="password" autocomplete="current-password" required></label>
+<div id="cd" hidden><label>{code}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label></div>
+<button>{go}</button>
 <div id="msg"></div>
 </form>
 <script>
@@ -830,52 +927,57 @@ f.onsubmit = async e => {
     document.getElementById('cd').hidden = false;
     f.code.focus();
   } else if (r.ok) location.reload();
-  else if (j.wait) msg.textContent = `Moc pokusů, zkus to znovu za ${j.wait} s.`;
-  else msg.textContent = r.status == 401 ? 'Špatné jméno, heslo nebo kód.' : 'Chyba serveru (' + r.status + ').';
+  else if (j.wait) msg.textContent = `{wait}`;
+  else msg.textContent = r.status == 401 ? '{wrong}' : '{server}' + r.status + ').';
 };
-</script>''')
+</script>'''
 
-SETUP_HTML = PAGE.replace('BODY', '''<div class="box">
-<h1>🖧 Mapa sítě</h1>
-<p>Účet ještě není nastavený. V terminálu kontejneru spusť:</p>
+SETUP = '''<div class="box">
+<h1>🖧 {TITLE}</h1>
+<p>{setup1}</p>
 <p><code>python app.py passwd</code></p>
-<p>a pak tuto stránku obnov.</p>
-</div>''')
+<p>{setup2}</p>
+</div>'''
+
+LOGIN_HTML = {g: page(g, LOGIN.replace('{TITLE}', PT[g]['TITLE'])) for g in LANGS}
+SETUP_HTML = {g: page(g, SETUP.replace('{TITLE}', PT[g]['TITLE'])) for g in LANGS}
 
 
-# ---------- příkazová řádka: passwd, 2fa on/off ----------
+# ---------- příkazová řádka: passwd, 2fa on/off, demo ----------
 
 
 def cli_passwd():
     a = auth() or {}
-    user = input(f'Jméno [{a.get("user", "admin")}]: ').strip() or a.get('user', 'admin')
+    user = input(tl('Jméno', 'User name') + f' [{a.get("user", "admin")}]: ').strip() or a.get('user', 'admin')
     while True:
-        p1 = getpass.getpass('Nové heslo (aspoň 10 znaků): ')
+        p1 = getpass.getpass(tl('Nové heslo (aspoň 10 znaků): ', 'New password (at least 10 characters): '))
         if len(p1) < 10:
-            print('Heslo je moc krátké.')
+            print(tl('Heslo je moc krátké.', 'The password is too short.'))
             continue
-        if p1 != getpass.getpass('Heslo znovu: '):
-            print('Hesla se neshodují.')
+        if p1 != getpass.getpass(tl('Heslo znovu: ', 'Password again: ')):
+            print(tl('Hesla se neshodují.', 'The passwords do not match.'))
             continue
         break
     a.update(user=user, hash=pw_hash(p1))
     write_json(AUTH, a)
     write_json(SESSIONS, {})  # změna hesla odhlásí všechny
-    print('Heslo nastavené, všechny relace jsou odhlášené.')
+    print(tl('Heslo nastavené, všechny relace jsou odhlášené.', 'Password set, all sessions are signed out.'))
 
 
 def cli_2fa(on):
     a = auth()
     if not a:
-        sys.exit('Nejdřív nastav heslo: python app.py passwd')
+        sys.exit(tl('Nejdřív nastav heslo: python app.py passwd', 'Set a password first: python app.py passwd'))
     if not on:
         a.pop('totp', None)
         write_json(AUTH, a)
-        print('2FA je vypnuté.')
+        print(tl('2FA je vypnuté.', '2FA is off.'))
         return
     secret = base64.b32encode(secrets.token_bytes(20)).decode().rstrip('=')
-    url = f'otpauth://totp/Mapa%20s%C3%ADt%C4%9B:{a["user"]}?secret={secret}&issuer=Mapa%20s%C3%ADt%C4%9B'
-    print('Naskenuj QR kód v aplikaci (Google Authenticator, Aegis, 1Password…):\n')
+    issuer = tl('Mapa%20s%C3%ADt%C4%9B', 'Network%20map')
+    url = f'otpauth://totp/{issuer}:{a["user"]}?secret={secret}&issuer={issuer}'
+    print(tl('Naskenuj QR kód v aplikaci (Google Authenticator, Aegis, 1Password…):\n',
+             'Scan the QR code in an authenticator app (Google Authenticator, Aegis, 1Password…):\n'))
     try:
         import qrcode
         q = qrcode.QRCode(border=1)
@@ -883,23 +985,23 @@ def cli_2fa(on):
         q.print_ascii(invert=True)
     except ImportError:
         pass
-    print(f'\nNebo zadej ručně klíč: {secret}\nOdkaz: {url}\n')
+    print(tl(f'\nNebo zadej ručně klíč: {secret}\nOdkaz: {url}\n', f'\nOr enter the key manually: {secret}\nLink: {url}\n'))
     for _ in range(3):
-        if totp_step(secret, input('Kód z aplikace: ')) is not None:
+        if totp_step(secret, input(tl('Kód z aplikace: ', 'Code from the app: '))) is not None:
             a['totp'] = secret
             write_json(AUTH, a)
-            print('2FA je zapnuté.')
+            print(tl('2FA je zapnuté.', '2FA is on.'))
             return
-        print('Kód nesedí.')
-    sys.exit('2FA zůstává vypnuté.')
+        print(tl('Kód nesedí.', 'Wrong code.'))
+    sys.exit(tl('2FA zůstává vypnuté.', '2FA stays off.'))
 
 
-def cli_demo():
+def cli_demo(lang):
     with _obj_lock:
-        d = demo_new()
+        d = demo_new(lang)
     if not d:
-        sys.exit(f'Chybí ukázková síť: {DEMO / FILES["net"]}')
-    print(f'Objekt „{DEMO_NAME}“ je založený (data/{d.name}/).')
+        sys.exit(tl('Chybí ukázková síť: ', 'The demo network is missing: ') + str(DEMO / FILES['net']))
+    print(tl(f'Objekt „{DEMO_NAME[lang]}“ je založený (data/{d.name}/).', f'Object "{DEMO_NAME[lang]}" created (data/{d.name}/).'))
 
 
 if __name__ == '__main__':
@@ -908,7 +1010,8 @@ if __name__ == '__main__':
         cli_passwd()
     elif cmd in (['2fa', 'on'], ['2fa', 'off']):
         cli_2fa(cmd[1] == 'on')
-    elif cmd == ['demo']:
-        cli_demo()
+    elif cmd[:1] == ['demo'] and len(cmd) <= 2 and (cmd[1:] or [CLI_LANG])[0] in LANGS:
+        cli_demo((cmd[1:] or [CLI_LANG])[0])
     else:
-        sys.exit('Použití: python app.py passwd | 2fa on | 2fa off | demo')
+        sys.exit(tl('Použití: python app.py passwd | 2fa on | 2fa off | demo [cs|en]',
+                    'Usage: python app.py passwd | 2fa on | 2fa off | demo [cs|en]'))

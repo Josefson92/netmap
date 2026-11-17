@@ -27,7 +27,11 @@ Editor má tři úložiště se stejným rozhraním (`name`, `get() → {net, la
 
 Data jsou po objektech (dům, chata, kancelář…). Každý objekt má složku `data/<id>/` s vlastními soubory a zálohami. Editor bez `?o=` v adrese ukáže přehled objektů a objekt otevírá jako `mapa.html?o=<id>`. Data v prohlížeči (localStorage) má po objektech s příponou `@id`.
 
-Při prvním startu na prázdných datech server založí prázdný objekt „Domov“ (označený „tady je NAS“) a objekt „Ukázka“ s fiktivní sítí ze složky `ukazka/`. Ukázku jde kdykoli založit znovu příkazem `python app.py demo`.
+Na prázdném serveru se při prvním otevření přehledu založí prázdný objekt „Domov“ (označený „tady je NAS“) a objekt „Ukázka“ s fiktivní sítí ze složky `ukazka/`. Pro anglický prohlížeč jsou to „Home“ a „Demo“ ze složky `ukazka-en/`. Ukázku jde kdykoli založit znovu příkazem `python app.py demo` (`demo cs` / `demo en`).
+
+## Jazyk
+
+Přihlašovací a nastavovací stránka jsou česky nebo anglicky: platí ruční volba z editoru (cookie `netmapLang`, editor ji nastaví po přepnutí jazyka), jinak první jazyk prohlížeče (`Accept-Language`; cs/sk = čeština, jinak angličtina). Na přihlašovací stránce je přepínač CZ/EN. Příkazy v terminálu (`passwd`, `2fa`, `demo`) mluví podle `NETMAP_LANG` (`cs`/`en`), jinak podle `LANG`, bez nich anglicky.
 
 ## API
 
@@ -79,6 +83,7 @@ netmap/
   docker-compose.yml
   server/        app.py, Dockerfile, requirements.txt
   ukazka/        network.json, layout.json (ukázková síť pro objekt „Ukázka“)
+  ukazka-en/     totéž anglicky (objekt „Demo“)
   www/           mapa.html
   config/        auth.json, sessions.json
   data/
@@ -99,7 +104,7 @@ netmap/
 
 ## Docker
 
-- Image se staví z `server/Dockerfile` (základ `python:3.12-slim`, kontext je kořen repozitáře kvůli složce `ukazka/`).
+- Image se staví z `server/Dockerfile` (základ `python:3.12-slim`, kontext je kořen repozitáře kvůli složkám `ukazka/` a `ukazka-en/`).
 - V image je `nmap`. Kontejner běží jako root kvůli raw socketům, jinak nic nepotřebuje.
 - `network_mode: host`, port **8780** (nastavitelný `PORT`). Na Synology obsazuje DSM 5000/5001 a 80/443.
 - Volumes: `./www:/app/www:ro`, `./data:/app/data`, `./config:/app/config`.
@@ -108,7 +113,7 @@ netmap/
 
 ## Nasazení na Synology
 
-1. **Složka:** na PC sestavit `netmap/` (struktura výše): `docker-compose.yml`, `server/` a `ukazka/` z repozitáře, `www/mapa.html`, prázdné `data/` a `config/`. V File Station otevřít sdílenou složku `docker` a složku `netmap` do ní přetáhnout. Kdo už má mapu ve složce `data/` z lokálního režimu, dá `network.json` a `layout.json` rovnou do `data/` a server je při prvním startu převede na objekt „Domov“.
+1. **Složka:** na PC sestavit `netmap/` (struktura výše): `docker-compose.yml`, `server/`, `ukazka/` a `ukazka-en/` z repozitáře, `www/mapa.html`, prázdné `data/` a `config/`. V File Station otevřít sdílenou složku `docker` a složku `netmap` do ní přetáhnout. Kdo už má mapu ve složce `data/` z lokálního režimu, dá `network.json` a `layout.json` rovnou do `data/` a server je při prvním startu převede na objekt „Domov“.
 2. **Projekt:** Container Manager → Projekt → Vytvořit: název `netmap`, cesta `/docker/netmap`, zdroj „Použít existující docker-compose.yml“, portál Web Station nezapínat. Image se postaví na NAS (potřebuje internet, pár minut).
 3. **Heslo:** Container Manager → Kontejner → `netmap` → Podrobnosti → Terminál → Vytvořit ▾ → Spustit příkazem: `python app.py passwd`.
 4. **Firewall DSM** (jen když je zapnutý): povolit TCP 8780 z domácí sítě (a z VPN, pokud ji používáš).

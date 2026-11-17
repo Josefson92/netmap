@@ -404,6 +404,7 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
   <button id="bSch" title="Spoje jako elektrické schéma: kmen z rodiče, uzel, sběrnice a hrábě k zařízením">📐 Schéma</button>
  </span>
  <span class="sp"></span>
+ <button id="bLang"></button>
  <button id="bTheme"></button>
  <input id="qs" type="search" placeholder="🔍 hledat (název, IP, místnost…)" size="22">
 </header>
@@ -416,7 +417,7 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
 <button id="bWide" title="Rozšířit panel ke středu"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
 <footer><span id="stAct" hidden>⚠ Na NAS je novější verze: <button id="bNasLoad" class="mini">Načíst z NAS</button> <button id="bNasMine" class="mini">Přepsat NAS mou verzí</button> · </span><span id="st"></span></footer>
 <div id="objs" hidden>
- <div class="obh"><b>🗺️ Mapa sítě · objekty</b><span class="sp"></span><button id="obTheme"></button><button id="obOut" title="Odhlásí se ze serveru na NAS">🚪 Odhlásit</button></div>
+ <div class="obh"><b>🗺️ Mapa sítě · objekty</b><span class="sp"></span><button id="obLang"></button><button id="obTheme"></button><button id="obOut" title="Odhlásí se ze serveru na NAS">🚪 Odhlásit</button></div>
  <div id="obL"><span class="hint">Načítám…</span></div>
 </div>
 <dialog id="obDlg"><form id="obF">
@@ -601,6 +602,619 @@ const ICG = [
 </script>
 
 <script>
+// Anglický překlad rozhraní: klíč = český text tak, jak je v kódu (tr) nebo ve statickém HTML, hodnota = anglicky.
+// {jméno} jsou parametry. Chybějící klíč zůstane česky, kontrola: tools/i18n-check.js.
+// Jen data, logika je v sekci „jazyk“ hlavního skriptu.
+const EN = {
+  // ---- obecné, hlavička, paleta ----
+  "Mapa sítě": "Network map",
+  "🗺️ Mapa sítě": "🗺️ Network map",
+  "🗺️ Mapa sítě · objekty": "🗺️ Network map · sites",
+  "Jazyk: {l}. Klikni pro přepnutí (čeština / angličtina).": "Language: {l}. Click to switch (Czech / English).",
+  "Barevný režim: {m}. Klikni pro přepnutí (podle systému → světlý → tmavý).": "Color mode: {m}. Click to switch (system → light → dark).",
+  "podle systému": "system",
+  "světlý": "light",
+  "tmavý": "dark",
+  "Zpět na přehled objektů (domů)": "Back to the site overview",
+  "← Objekty": "← Sites",
+  "Složka s daty": "Data folder",
+  "Uložit (Ctrl+S)": "Save (Ctrl+S)",
+  "💾 Uložit": "💾 Save",
+  "Export a import": "Export and import",
+  "Stáhne network.json, layout.json a network.md": "Downloads network.json, layout.json and network.md",
+  "⬇ Stáhnout soubory": "⬇ Download files",
+  "Jeden soubor HTML s mapou: otevře se v prohlížeči i bez NAS, jen na prohlížení": "A single HTML file with the map: opens in a browser even without the NAS, view only",
+  "🌐 Export HTML (prohlížení)…": "🌐 Export HTML (view only)…",
+  "Načte network.json / layout.json, nebo mapu z exportu HTML": "Loads network.json / layout.json, or a map from an HTML export",
+  "⬆ Importovat JSON / HTML": "⬆ Import JSON / HTML",
+  "Zkopíruje textový přehled sítě": "Copies the text overview of the network",
+  "📋 Kopírovat přehled (MD)": "📋 Copy overview (MD)",
+  "NAS proskenuje síť a porovná nalezená zařízení s mapou": "The NAS scans the network and compares the devices it finds with the map",
+  "🔍 Sken sítě…": "🔍 Network scan…",
+  "Zálohy dat na NAS: porovnání se současnou verzí a obnova": "Data backups on the NAS: compare with the current version and restore",
+  "🕘 Zálohy…": "🕘 Backups…",
+  "Odhlásí se ze serveru na NAS": "Signs out of the server on the NAS",
+  "🚪 Odhlásit": "🚪 Sign out",
+  "Prostory: dům, patra, místnosti a kde je které zařízení": "Locations: house, floors, rooms and where each device is",
+  "🏠 Prostory": "🏠 Locations",
+  "Co se má na mapě zobrazit: vrstvy, sítě VLAN, prostory, popisky": "What the map shows: layers, VLAN networks, locations, labels",
+  "👁 Zobrazení ▾": "👁 View ▾",
+  "Zobrazení": "View",
+  "Zapnout všechny vrstvy, sítě a prostory": "Turn on all layers, networks and locations",
+  "↺ Vše zpět": "↺ Reset all",
+  "Zavřít": "Close",
+  "Zavřít (Esc)": "Close (Esc)",
+  "Vrstvy": "Layers",
+  "Zapnout všechny vrstvy": "Turn on all layers",
+  "Zařízení jen se spoji ve vypnutých vrstvách se schovají": "Devices whose links are all in hidden layers are hidden",
+  "VLAN": "VLAN",
+  "Zobrazit všechny sítě": "Show all networks",
+  "Zařízení se schová, když jsou všechny jeho sítě vypnuté (switch s více sítěmi zůstane, dokud je některá zapnutá)": "A device is hidden when all its networks are off (a switch with several networks stays while any of them is on)",
+  "Prostory": "Locations",
+  "Zapnout všechny prostory": "Turn on all locations",
+  "Popisky": "Labels",
+  "popisky spojů": "link labels",
+  "Čísla portů u konců spojů": "Port numbers at link ends",
+  "porty": "ports",
+  "Rámeček kolem routeru, switche nebo AP s jeho kabelovým podstromem a kolem Wi-Fi skupiny; tažením za okraj nebo štítek se posune celá skupina": "A frame around a router, switch or AP with its wired subtree and around a Wi-Fi group; drag its edge or label to move the whole group",
+  "rámečky skupin": "group frames",
+  "Spojovat: táhni od zařízení k zařízení (nebo Shift+táhni)": "Connect: drag from device to device (or Shift+drag)",
+  "🔗 Spojovat": "🔗 Connect",
+  "Automaticky uspořádat do stromu": "Arrange automatically as a tree",
+  "🧭 Uspořádat": "🧭 Arrange",
+  "Přizpůsobit pohled (F)": "Fit to view (F)",
+  "Odemkne mapu k úpravám; uložit ji pak jde do složky 📁 nebo jako nový soubor (⋯ → 🌐 Export HTML)": "Unlocks the map for editing; you can then save it to a folder 📁 or as a new file (⋯ → 🌐 Export HTML)",
+  "✎ Upravit": "✎ Edit",
+  "Spoje jako elektrické schéma: kmen z rodiče, uzel, sběrnice a hrábě k zařízením": "Links as a wiring diagram: trunk from the parent, junction, bus and branches to the devices",
+  "📐 Schéma": "📐 Schematic",
+  "🔍 hledat (název, IP, místnost…)": "🔍 search (name, IP, room…)",
+  "Zavřít panel": "Close panel",
+  "Přidat zařízení a legenda spojů": "Add devices and link legend",
+  "Panel vlastností": "Properties panel",
+  "⚠ Na NAS je novější verze:": "⚠ The NAS has a newer version:",
+  "Načíst z NAS": "Load from NAS",
+  "Přepsat NAS mou verzí": "Overwrite NAS with my version",
+  "Klikni nebo přetáhni na plochu": "Click or drag onto the canvas",
+  "Zařízení": "Devices",
+  "Spoje": "Links",
+  // ---- statická okna (objekt, export, sken, zálohy, prostory, firewall) ----
+  "Načítám…": "Loading…",
+  "Název": "Name",
+  "Popisek (nepovinný)": "Description (optional)",
+  "Fotka nebo obrázek místo náhledu topologie": "A photo or picture instead of the topology preview",
+  "📷 Vlastní obrázek": "📷 Custom picture",
+  "Zpět na náhled z topologie": "Back to the topology preview",
+  "× Odebrat": "× Remove",
+  "Jen objekt s NAS smí skenovat síť (NAS vidí jen svou síť). Může ho mít jen jeden objekt.": "Only the site with the NAS can scan the network (the NAS only sees its own network). Only one site can have it.",
+  "🖧 Tady je NAS (sken sítě)": "🖧 The NAS is here (network scan)",
+  "Zrušit": "Cancel",
+  "Uložit": "Save",
+  "🌐 Export HTML": "🌐 Export HTML",
+  "Jeden soubor s mapou pro ostatní. Otevře se v prohlížeči i bez NAS, jen na prohlížení (posun, zoom, výběr, vrstvy a filtry). „✎ Upravit“ ho odemkne. Zpátky do objektu se načte přes ⋯ → ⬆ Importovat.": "A single file with the map for others. It opens in a browser even without the NAS, view only (pan, zoom, selection, layers and filters). “✎ Edit” unlocks it. To load it back into a site use ⋯ → ⬆ Import.",
+  "Přidat do exportu": "Include in the export",
+  "🛡 firewall (pravidla, přesměrování, poznámky)": "🛡 firewall (rules, port forwarding, notes)",
+  "poznámky u zařízení a spojů": "notes on devices and links",
+  "MAC adresy (bez nich se zakryjí i v poznámkách)": "MAC addresses (without them they are masked in notes too)",
+  "⬇ Stáhnout HTML": "⬇ Download HTML",
+  "🔍 Sken sítě": "🔍 Network scan",
+  "NAS proskenuje síť (nmap), trvá to asi půl minuty": "The NAS scans the network (nmap), it takes about half a minute",
+  "▶ Skenovat": "▶ Scan",
+  "🕘 Zálohy na NAS": "🕘 Backups on the NAS",
+  "Nový prostor na nejvyšší úrovni (dům, kůlna, zahrada)": "New top-level location (house, shed, garden)",
+  "＋ Prostor": "＋ Location",
+  "🛡 Firewall": "🛡 Firewall",
+  "Stáhne aktuální tabulku jako CSV (otevře se v Excelu)": "Downloads the current table as CSV (opens in Excel)",
+  "⬇ CSV": "⬇ CSV",
+  // ---- typy zařízení (T) ----
+  "Internet (WAN)": "Internet (WAN)",
+  "Modem / ONT": "Modem / ONT",
+  "Router": "Router",
+  "Switch": "Switch",
+  "Patch panel": "Patch panel",
+  "Wi-Fi AP / mesh": "Wi-Fi AP / mesh",
+  "Zigbee koordinátor": "Zigbee coordinator",
+  "Thread / Matter hub": "Thread / Matter hub",
+  "NAS": "NAS",
+  "Server / HA": "Server / HA",
+  "Počítač": "Computer",
+  "Notebook": "Laptop",
+  "Telefon / tablet": "Phone / tablet",
+  "Televize": "TV",
+  "3D tiskárna": "3D printer",
+  "Tiskárna": "Printer",
+  "Kamera": "Camera",
+  "IoT zařízení": "IoT device",
+  "Senzor": "Sensor",
+  "UPS (záložní zdroj)": "UPS (backup power)",
+  "Přepěťová ochrana": "Surge protector",
+  "Konzole": "Console",
+  "Audio / repro": "Audio / speaker",
+  "Ostatní": "Other",
+  // ---- typy spojů (L) ----
+  "Cat4": "Cat4",
+  "Cat5": "Cat5",
+  "Cat5e": "Cat5e",
+  "Cat6": "Cat6",
+  "Cat6a": "Cat6a",
+  "Cat7": "Cat7",
+  "Optika": "Fiber",
+  "Koax": "Coax",
+  "RJ11 (telefonní)": "RJ11 (phone)",
+  "Powerline": "Powerline",
+  "USB": "USB",
+  "Wi-Fi 2.4 GHz": "Wi-Fi 2.4 GHz",
+  "Wi-Fi 5 GHz": "Wi-Fi 5 GHz",
+  "Wi-Fi 6 GHz": "Wi-Fi 6 GHz",
+  "Wi-Fi mesh (páteř)": "Wi-Fi mesh (backhaul)",
+  "Zigbee": "Zigbee",
+  "Thread (Matter)": "Thread (Matter)",
+  "Z-Wave": "Z-Wave",
+  "Bluetooth": "Bluetooth",
+  "Napájení 230 V": "Power 230 V",
+  "Napájení DC (adaptér)": "Power DC (adapter)",
+  "Jiné": "Other",
+  // ---- druhy prostorů (AK), vrstvy (LY), skupiny ikon (ICG) ----
+  "Budova (dům, kůlna, garáž)": "Building (house, shed, garage)",
+  "Podlaží": "Floor",
+  "Místnost": "Room",
+  "Venku (zahrada, dvůr)": "Outdoors (garden, yard)",
+  "🔌 Kabel": "🔌 Cable",
+  "📶 Wi-Fi": "📶 Wi-Fi",
+  "🕸 Mesh páteř": "🕸 Mesh backhaul",
+  "🐝 Zigbee": "🐝 Zigbee",
+  "🔷 Thread/Matter": "🔷 Thread/Matter",
+  "⚡ Napájení": "⚡ Power",
+  "Síť": "Network",
+  "Servery a počítače": "Servers and computers",
+  "Média": "Media",
+  "Bezpečnost": "Security",
+  "Chytrá domácnost": "Smart home",
+  // ---- popisky polí (FL) ----
+  "Výrobce / model": "Make / model",
+  "IP adresa": "IP address",
+  "MAC / IEEE adresa": "MAC / IEEE address",
+  "Sériové číslo (SN)": "Serial number (SN)",
+  "Místnost / umístění": "Room / location",
+  "SSID": "SSID",
+  "Umí pásma (prázdné = vše, co vysílá SSID)": "Supported bands (empty = everything the SSID broadcasts)",
+  "Skupiny portů (role · čísla portů · rychlost · PoE · síť)": "Port groups (role · port numbers · speed · PoE · network)",
+  "PoE rozpočet (W)": "PoE budget (W)",
+  "PoE odběr (W)": "PoE draw (W)",
+  "Kanál": "Channel",
+  "Typ přípojky": "Connection type",
+  "Poskytovatel": "Provider",
+  "Download (Mb/s)": "Download (Mb/s)",
+  "Upload (Mb/s)": "Upload (Mb/s)",
+  "Veřejná IP / CGNAT": "Public IP / CGNAT",
+  "Výkon (VA / W)": "Capacity (VA / W)",
+  "Výdrž na baterii (min)": "Battery runtime (min)",
+  "Počet zásuvek": "Number of outlets",
+  "Absorpce přepětí (J)": "Surge absorption (J)",
+  "Poznámka": "Note",
+  "VLANy (ID · název · podsíť)": "VLANs (ID · name · subnet)",
+  "Wi-Fi sítě (SSID · pásmo · VLAN)": "Wi-Fi networks (SSID · band · VLAN)",
+  "Osazené porty (0–50)": "Populated ports (0–50)",
+  "Mesh role": "Mesh role",
+  "Pásmo páteře": "Backhaul band",
+  "Rychlost / signál (např. 866 Mb/s, −58 dBm)": "Speed / signal (e.g. 866 Mb/s, −58 dBm)",
+  // ---- hodnoty ze seznamů (ukládají se česky, tady jen zobrazení) ----
+  "FTTH (GPON)": "FTTH (GPON)",
+  "FTTH (AON/ethernet)": "FTTH (AON/ethernet)",
+  "VDSL": "VDSL",
+  "ADSL": "ADSL",
+  "Kabel (DOCSIS)": "Cable (DOCSIS)",
+  "LTE": "LTE",
+  "5G": "5G",
+  "Starlink / satelit": "Starlink / satellite",
+  "Bezdrátový ISP": "Wireless ISP",
+  "hlavní (controller)": "main (controller)",
+  "satelit (node)": "satellite (node)",
+  "samostatný AP": "standalone AP",
+  "2.4+5 GHz": "2.4+5 GHz",
+  "2.4 GHz": "2.4 GHz",
+  "5 GHz": "5 GHz",
+  "6 GHz": "6 GHz",
+  "2.4+5+6 GHz": "2.4+5+6 GHz",
+  "WAN": "WAN",
+  "Linka (DSL/ONT/koax)": "Line (DSL/ONT/coax)",
+  "Uplink": "Uplink",
+  "Správa": "Management",
+  "100M": "100M",
+  "1G": "1G",
+  "2.5G": "2.5G",
+  "10G": "10G",
+  "SFP 1G": "SFP 1G",
+  "SFP+ 10G": "SFP+ 10G",
+  "SFP28 25G": "SFP28 25G",
+  "PoE": "PoE",
+  "PoE+": "PoE+",
+  "PoE++": "PoE++",
+  "pasivní PoE": "passive PoE",
+  // ---- panel vlastností ----
+  "Topologie": "Topology",
+  "Klikni na zařízení nebo spoj.": "Click a device or a link.",
+  "Zařízení přidáš kliknutím v levém panelu nebo přetažením na plochu.": "Add a device by clicking it in the left panel or dragging it onto the canvas.",
+  "Spoj: Shift + táhni z jednoho zařízení na druhé (nebo zapni 🔗 Spojovat).": "Link: Shift + drag from one device to another (or turn on 🔗 Connect).",
+  "Posun plochy: táhni prázdné místo.": "Pan: drag an empty spot.",
+  "Typ spoje se odhadne, změníš ho po kliknutí na čáru.": "The link type is guessed; click the line to change it.",
+  "Vyber složku 📁: ukládá se tam <b>network.json</b> (data), <b>layout.json</b> (rozložení) a <b>network.md</b> (čitelný přehled).": "Pick a folder 📁: it stores <b>network.json</b> (data), <b>layout.json</b> (layout) and <b>network.md</b> (readable overview).",
+  "Jen na prohlížení": "View only",
+  "export {t}": "exported {t}",
+  "Klikni na zařízení nebo spoj, tady se ukážou jeho údaje.": "Click a device or a link to see its details here.",
+  "Posun: táhni prázdné místo, zoom kolečkem (na mobilu dvěma prsty), F = celá mapa.": "Pan: drag an empty spot, zoom with the wheel (two fingers on a phone), F = whole map.",
+  "👁 Zobrazení přepíná, co je vidět (vrstvy, sítě VLAN, prostory, popisky), 🏠 Prostory ukáže dům, patra a místnosti.": "👁 View switches what is shown (layers, VLAN networks, locations, labels), 🏠 Locations shows the house, floors and rooms.",
+  "✎ Upravit mapu odemkne. Uložit ji pak jde do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML.": "✎ Edit unlocks the map. You can then save it to a folder 📁, or as a new file: ⋯ → 🌐 Export HTML.",
+  "Typ zařízení": "Device type",
+  "Ikona": "Icon",
+  "Zavřít výběr": "Close picker",
+  "Vybrat ikonu…": "Choose icon…",
+  "Zpět na ikonu typu": "Back to the type's icon",
+  "výchozí": "default",
+  "Obrázek se ořízne na čtverec a zmenší na {px} px": "The picture is cropped to a square and scaled down to {px} px",
+  "Jiný obrázek…": "Another picture…",
+  "Vlastní obrázek…": "Custom picture…",
+  "bez obrázku": "no picture",
+  "hledat (router, nas, zigbee, light…)": "search (router, nas, zigbee, light…)",
+  "nebo vlastní emoji": "or your own emoji",
+  "např. 🛰️": "e.g. 🛰️",
+  "Nic nenalezeno.": "Nothing found.",
+  "Obrázek se nepodařilo načíst.": "The picture could not be loaded.",
+  "Údaje": "Details",
+  "Sítě a Wi-Fi": "Networks and Wi-Fi",
+  "Síť (VLAN)": "Network (VLAN)",
+  "Porty": "Ports",
+  "Spoje ({n})": "Links ({n})",
+  "Žádné. Shift+táhni na jiné zařízení.": "None. Shift+drag onto another device.",
+  "Duplikovat": "Duplicate",
+  "Smazat": "Delete",
+  "Prostory (dům, patra, místnosti) založíš v 🏠 Prostory, umístění pak vybereš z nabídky.": "Create locations (house, floors, rooms) in 🏠 Locations, then pick the location from the list.",
+  "Port na tomto zařízení": "Port on this device",
+  "Spoj": "Link",
+  "Typ spoje": "Link type",
+  "Souběžné spoje mezi těmito zařízeními ({n}):": "Parallel links between these devices ({n}):",
+  "Port na „{d}“": "Port on “{d}”",
+  "Další kabel mezi stejnými zařízeními (např. port 2 ↔ port 2)": "Another cable between the same devices (e.g. port 2 ↔ port 2)",
+  "souběžný spoj": "parallel link",
+  "Smazat spoj": "Delete link",
+  "žádné": "none",
+  "Vlastní text…": "Custom text…",
+  "Místnost / umístění (mimo prostory):": "Room / location (outside the locations):",
+  "Posunout výš": "Move up",
+  "Duplikovat (další port, stejné parametry)": "Duplicate (next port, same settings)",
+  "Odebrat": "Remove",
+  "Spojí skupiny se stejnou rolí, rychlostí, PoE a sítí, např. 1,2,3,4 → 1-4": "Merges groups with the same role, speed, PoE and network, e.g. 1,2,3,4 → 1-4",
+  "sloučit stejné skupiny": "merge identical groups",
+  "přidat": "add",
+  "Zúžit panel": "Narrow the panel",
+  "Rozšířit panel ke středu": "Widen the panel towards the center",
+  // ---- porty a VLANy v panelu ----
+  "odběr / rozpočet": "draw / budget",
+  "volný": "free",
+  "port použit vícekrát!": "port used more than once!",
+  "port není v seznamu portů": "port is not in the port list",
+  "Obsazeno {a}/{b}": "In use {a}/{b}",
+  "Zapojené porty": "Connected ports",
+  "Port {p} je ve víc skupinách, platí první z nich.": "Port {p} is in several groups, the first one applies.",
+  "mimo seznam portů": "not in the port list",
+  "port": "port",
+  "— bez portu": "— no port",
+  "port…": "port…",
+  "obsazený ({d})": "in use ({d})",
+  "Port {p} na „{d}“ už používá „{o}“, změna se neuložila.": "Port {p} on “{d}” is already used by “{o}”, the change was not saved.",
+  "podle skupiny": "from the group",
+  "{v}: tagovaná na portu {p}": "{v}: tagged on port {p}",
+  "Výjimka oproti skupině portů": "Exception to the port group",
+  "VLANy na portech (nastaveno {a}/{b})": "VLANs on ports (set {a}/{b})",
+  "Síť pro celou skupinu portů nastavíš výš ve sloupci „síť“ u skupiny, tady jsou výjimky (* = port se liší od skupiny).": "Set the network for a whole port group above in the group's “network” column; these are the exceptions (* = port differs from its group).",
+  "Netagovaná = síť portu (access / PVID), dostane ji vše, co je do portu zapojené. Tagované = další sítě po stejném kabelu (trunk) pro spravovaný switch nebo AP.": "Untagged = the port's network (access / PVID), everything plugged into the port gets it. Tagged = more networks over the same cable (trunk) for a managed switch or AP.",
+  "netagovaná": "untagged",
+  "tagované": "tagged",
+  "vše": "all",
+  "Nastaví netagovanou síť všem portům": "Sets the untagged network on all ports",
+  "Kde jsou sítě": "Where the networks are",
+  "síť": "network",
+  "síť {v}": "network {v}",
+  "a porty": "and ports",
+  "Patří do sítí": "Member of networks",
+  "Nezjištěno. Přiřaď síť portu na nadřazeném zařízení (🏷 VLANy na portech), nebo ji vyplň v poli VLAN.": "Unknown. Assign a network to the port on the upstream device (🏷 VLANs on ports), or fill in the VLAN field.",
+  "neznámá": "unknown",
+  "z nastavení portů": "from the port settings",
+  "z portu {p} na „{d}“": "from port {p} on “{d}”",
+  "přes „{d}“ ({s})": "via “{d}” ({s})",
+  "ze SSID „{s}“": "from SSID “{s}”",
+  "a": "and",
+  "zadané ručně": "entered manually",
+  "Firewall byl při exportu vynechán.": "The firewall was left out of the export.",
+  "Pravidla firewallu a přesměrování portů ve velkém okně": "Firewall rules and port forwarding in a large window",
+  "Pravidla firewallu ({n})": "Firewall rules ({n})",
+  // ---- Wi-Fi v panelu ----
+  "ne, kabel / jinak": "no, cable / other",
+  "Wi-Fi, síť neuvedená": "Wi-Fi, network not specified",
+  "vysílá {d}": "broadcast by {d}",
+  "připojí se na {b}": "connects on {b}",
+  "Zařízení neumí pásmo sítě {s} ({b}).": "The device does not support the band of network {s} ({b}).",
+  "Vyber síť ze seznamu.": "Pick a network from the list.",
+  "Sítě (SSID) zadej u routeru nebo AP, pak je tu vybereš.": "Enter the networks (SSIDs) on the router or AP, then pick one here.",
+  "Klienti": "Clients",
+  "síť neuvedená": "network not specified",
+  "Klienti se sítí „neuvedená“ dostanou SSID se stejnou VLAN": "Clients with an unspecified network get the SSID with the same VLAN",
+  "Přiřadit SSID podle VLAN ({n})": "Assign SSID by VLAN ({n})",
+  "Omezené zobrazení:": "Limited view:",
+  "Mapa je zamčená: zařízení jde jen vybrat a upravit v panelu. Klikni pro odemčení.": "The map is locked: devices can only be selected and edited in the panel. Click to unlock.",
+  "Zamknout mapu, aby se nic nepohnulo omylem (zařízení, rámečky skupin, čáry schématu); klikat a upravovat v panelu půjde dál": "Lock the map so nothing moves by accident (devices, group frames, schematic lines); clicking and editing in the panel still works",
+  "jen prohlížení, upravit jde po kliknutí na ✎ Upravit": "view only, click ✎ Edit to make changes",
+  "mapa je zamčená, odemkni ji tlačítkem v hlavičce": "the map is locked, unlock it with the button in the header",
+  "Připojit „{d}“": "Connect “{d}”",
+  "Vybrat složku": "Choose folder",
+  // ---- okna (firewall, prostory, Zobrazení, sken, zálohy, export, objekty) ----
+  "bez VLAN": "no VLAN",
+  "Zobrazit jen tuto síť": "Show only this network",
+  "jen": "only",
+  "Zobrazit jen tento prostor": "Show only this location",
+  "Co udělat se zařízeními ve vypnutých prostorech": "What to do with devices in hidden locations",
+  "ztlumit": "dim",
+  "schovat": "hide",
+  "bez prostoru": "no location",
+  "Prostory (schované)": "Locations (hidden)",
+  "Prostory (ztlumené)": "Locations (dimmed)",
+  "Povolit": "Allow",
+  "Zakázat": "Deny",
+  "Protokol": "Protocol",
+  "Zdroj: síť": "Source: network",
+  "Cíl: síť": "Destination: network",
+  "Akce": "Action",
+  "Účel / poznámka": "Purpose / note",
+  "Původ": "Origin",
+  "ruční": "manual",
+  "Vnější port": "External port",
+  "Cílová IP": "Destination IP",
+  "Cílový port": "Destination port",
+  "stejný": "same",
+  "Pravidla": "Rules",
+  "Přesměrování portů / UPnP": "Port forwarding / UPnP",
+  "Poznámky": "Notes",
+  "Vyhodnocuje se shora dolů, první shoda vyhrává: výjimky (Povolit) patří nad plošné zákazy. Prázdné pole = vše. Víc sítí odděl čárkou. Sítě se nabízejí z VLAN routeru, IP ze zařízení v mapě.": "Evaluated top to bottom, the first match wins: exceptions (Allow) go above blanket denies. Empty field = all. Separate several networks with commas. Networks are offered from the router's VLANs, IPs from the devices on the map.",
+  "Porty otevřené z internetu dovnitř. UPnP si otevírají zařízení sama, ruční přesměrování nastavuješ v routeru.": "Ports opened from the internet inwards. UPnP ports are opened by the devices themselves, manual forwarding is set up in the router.",
+  "síť „{x}“ není mezi VLANy routeru": "network “{x}” is not among the router's VLANs",
+  "IP {ip} nemá v mapě žádné zařízení": "no device on the map has IP {ip}",
+  "nadbytečné: stejnou akci už dělá {w}": "redundant: {w} already does the same",
+  "nikdy se neuplatní: dřív ho zachytí {w}": "never applies: {w} catches it first",
+  "vnější port {p} už přesměrovává #{n}": "external port {p} is already forwarded by #{n}",
+  "{n} upozornění": "{n} warning(s)",
+  "{n} info": "{n} info",
+  "kontroly bez nálezu": "checks found nothing",
+  "Zapnuté": "Enabled",
+  "Zapnuté (odškrtnutím vypneš, pravidlo zůstane v tabulce)": "Enabled (uncheck to disable, the rule stays in the table)",
+  "Výš (vyhodnotí se dřív)": "Up (evaluated earlier)",
+  "Níž": "Down",
+  "Smazat (Ctrl+Z vrátí)": "Delete (Ctrl+Z undoes)",
+  "přidat pravidlo": "add rule",
+  "přidat přesměrování": "add forwarding",
+  "Volné poznámky k firewallu: legenda sítí, důvody pravidel, co zvážit.": "Free notes on the firewall: network legend, reasons for rules, things to consider.",
+  "poznámky…": "notes…",
+  "Zapnuto": "Enabled",
+  "Zdroj {c}": "Source {c}",
+  "Cíl {c}": "Destination {c}",
+  "ne": "no",
+  "ano": "yes",
+  "firewall-pravidla.csv": "firewall-rules.csv",
+  "firewall-presmerovani.csv": "firewall-forwarding.csv",
+  "Nové": "New",
+  "Změněné": "Changed",
+  "Chybějící": "Missing",
+  "V pořádku": "OK",
+  "MAC 2. rozhraní": "MAC of 2nd interface",
+  "IP 2. rozhraní": "IP of 2nd interface",
+  "jméno": "name",
+  "Ukázat na mapě": "Show on the map",
+  "Soukromá (náhodná) adresa Wi-Fi, může se měnit": "Private (random) Wi-Fi address, it may change",
+  "náhodná": "random",
+  "Nic.": "Nothing.",
+  "V síti, ale ne v mapě. Typ je odhad podle výrobce a jména, před přidáním ho můžeš změnit.": "On the network but not on the map. The type is guessed from the vendor and name, you can change it before adding.",
+  "Výrobce": "Vendor",
+  "Jméno (DNS)": "Name (DNS)",
+  "Typ": "Type",
+  "Přidat do mapy": "Add to map",
+  "Stejná MAC a jiná IP, nebo stejná IP a jiná MAC. „Převzít“ zapíše hodnotu ze sítě do mapy.": "Same MAC with a different IP, or same IP with a different MAC. “Take over” writes the value from the network into the map.",
+  "Převzít vše": "Take over all",
+  "Spárováno podle": "Matched by",
+  "Rozdíl": "Difference",
+  "Výrobce / jméno": "Vendor / name",
+  "Převzít": "Take over",
+  "V mapě mají IP ze skenované sítě, ale sken je nenašel. Mohou být jen vypnutá nebo spát (telefony, IoT).": "On the map with an IP in the scanned network, but the scan did not find them. They may just be off or asleep (phones, IoT).",
+  "NAS skenuje {n} (od {t}), trvá to asi půl minuty…": "The NAS is scanning {n} (since {t}), it takes about half a minute…",
+  "Zatím žádný sken. Spustí ho ▶ Skenovat (NAS proskenuje {n}).": "No scan yet. Start one with ▶ Scan (the NAS will scan {n}).",
+  "Sken {t} · {n} · nalezeno {c} zařízení za {s} s": "Scan {t} · {n} · found {c} devices in {s} s",
+  "Ostatní VLANy NAS nevidí, jejich zařízení se neporovnávají.": "The NAS cannot see other VLANs, their devices are not compared.",
+  "Skenuje se…": "Scanning…",
+  "Skenovat": "Scan",
+  "sken nejde načíst: {e}": "cannot load the scan: {e}",
+  "výrobce (sken): {v}": "vendor (scan): {v}",
+  "typ": "type",
+  "ikona": "icon",
+  "obrázek": "image",
+  "poznámka": "note",
+  "VLANy na portech": "VLANs on ports",
+  "konec": "end",
+  "prostor": "location",
+  "umístění": "placement",
+  "druh": "kind",
+  "barva patra": "floor colour",
+  "odběr PoE": "PoE draw",
+  "přihlášení vypršelo": "the login has expired",
+  "právě teď": "just now",
+  "před {n} min": "{n} min ago",
+  "před {n} h": "{n} h ago",
+  "před {n} dny": "{n} days ago",
+  "obnova vrátí (teď v mapě není)": "restore brings it back (not on the map now)",
+  "obnova smaže (v záloze ještě nebylo)": "restore deletes it (not in the backup yet)",
+  "(v záloze „{n}“)": "(“{n}” in the backup)",
+  "jiné: {f}": "different: {f}",
+  "{n}× jiná pozice zařízení": "{n}× different device position",
+  "jiné ruční polohy čar schématu": "different manual positions of schematic lines",
+  "{r} pravidel, {f} přesměrování": "{r} rules, {f} forwardings",
+  "firewall: teď {a}, v záloze {b}": "firewall: now {a}, in the backup {b}",
+  "Záloha je stejná jako současná verze, obnova by nic nezměnila.": "The backup is the same as the current version, restoring would change nothing.",
+  "Zatím žádná záloha. Server ji udělá při první změně po aspoň 30 minutách bez úprav.": "No backup yet. The server makes one at the first change after at least 30 minutes without edits.",
+  "Vyber vlevo zálohu, ukáže se, co by obnova změnila proti současné mapě.": "Pick a backup on the left to see what restoring it would change against the current map.",
+  "Záloha s časem X je stav dat před úpravami, které v tomto čase začaly. Server zálohuje jen při první změně po aspoň 30 minutách bez úprav (jedny úpravy = jedna záloha) a nechává 4 nejnovější zálohy.": "A backup with time X is the state of the data before the edits that started at that time. The server backs up only at the first change after at least 30 minutes without edits (one editing session = one backup) and keeps the 4 newest backups.",
+  "Stav před {t}": "State before {t}",
+  "Nejdřív vyřeš rozpor s NAS ve stavovém řádku": "First resolve the conflict with the NAS in the status bar",
+  "Obnovit tuto verzi": "Restore this version",
+  "Stáhne network.json a layout.json této zálohy": "Downloads network.json and layout.json of this backup",
+  "Stáhnout soubory": "Download files",
+  "Smaže tuto zálohu z NAS (nejde vrátit)": "Deletes this backup from the NAS (cannot be undone)",
+  "Smazat zálohu": "Delete backup",
+  "Obnova přepíše mapu touto verzí a uloží ji jako novou. Současná verze se předtím zazálohuje a obnovu jde hned vrátit Ctrl+Z. Pohled (posun, přiblížení) zůstane.": "Restoring overwrites the map with this version and saves it as a new one. The current version is backed up first and the restore can be undone right away with Ctrl+Z. The view (pan, zoom) stays.",
+  "seznam záloh nejde načíst: {e}": "cannot load the list of backups: {e}",
+  "záloha nemá network.json": "the backup has no network.json",
+  "zálohu nejde načíst: {e}": "cannot load the backup: {e}",
+  "Obnovit mapu do stavu před {t}?": "Restore the map to the state before {t}?",
+  "Současná verze se předtím uloží jako záloha a obnovu jde vrátit Ctrl+Z.": "The current version is saved as a backup first and the restore can be undone with Ctrl+Z.",
+  "na NAS je novější verze, nejdřív vyřeš rozpor ve stavovém řádku": "the NAS has a newer version, first resolve the conflict in the status bar",
+  "obnova neproběhla: {e}": "restore failed: {e}",
+  "obnovena záloha z {t}": "restored backup from {t}",
+  "Smazat zálohu z {t}?": "Delete the backup from {t}?",
+  "Záloha se smaže z NAS natrvalo a nepůjde obnovit.": "The backup is deleted from the NAS permanently and cannot be restored.",
+  "zálohu nejde smazat: {e}": "cannot delete the backup: {e}",
+  "smazána záloha z {t}": "deleted backup from {t}",
+  "zaloha-{id}-network.json": "backup-{id}-network.json",
+  "zaloha-{id}-layout.json": "backup-{id}-layout.json",
+  "Barva patra „{n}“": "Colour of floor “{n}”",
+  "Druh prostoru": "Kind of location",
+  "Přímo tady: {d}": "Directly here: {d}",
+  "Přímo tady žádné zařízení": "No device directly here",
+  "Přidat prostor dovnitř": "Add a location inside",
+  "Posunout níž": "Move down",
+  "O úroveň výš (za nadřazený prostor)": "One level up (after the parent location)",
+  "Dovnitř prostoru nad ním": "Into the location above",
+  "Kopie i s prostory uvnitř, bez zařízení (patro dostane další číslo)": "Copy including the locations inside, without devices (a floor gets the next number)",
+  "Smazat (prostory a zařízení uvnitř přejdou o úroveň výš)": "Delete (locations and devices inside move one level up)",
+  "Druh": "Kind",
+  "Zařízení přímo v prostoru (v závorce i v prostorech uvnitř)": "Devices directly in the location (in brackets including the locations inside)",
+  "Zatím žádné prostory. ＋ Prostor přidá první, třeba „Dům“; do něj patra (Přízemí, 1. patro) a do nich místnosti. Zařízení pak dostane prostor v panelu vlastností.": "No locations yet. ＋ Location adds the first one, e.g. “House”; put floors in it (Ground floor, 1st floor) and rooms in those. Then give each device its location in the properties panel.",
+  "Přízemí": "Ground floor",
+  "Dům": "House",
+  "{n} (kopie)": "{n} (copy)",
+  "Prostor": "Location",
+  "IP": "IP",
+  "MAC": "MAC",
+  "firewall": "firewall",
+  "poznámky": "notes",
+  "export „{n}“ stažen": "export “{n}” downloaded",
+  "(vynechané: {m})": "(left out: {m})",
+  "úpravy zapnuté – ulož do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML": "editing enabled – save to a folder 📁, or as a new file: ⋯ → 🌐 Export HTML",
+  "dnes {h}": "today {h}",
+  "včera {h}": "yesterday {h}",
+  "prázdná mapa": "empty map",
+  "topologie": "topology",
+  "Otevřít mapu": "Open map",
+  "Tady běží NAS, jen tady jde skenovat síť": "The NAS runs here, the network can be scanned only here",
+  "Upravit název, popisek a značku NAS": "Edit the name, description and NAS mark",
+  "Smazat objekt": "Delete site",
+  "{n} zařízení · změna {t}": "{n} devices · changed {t}",
+  "Nový objekt": "New site",
+  "Objekty": "Sites",
+  "seznam objektů nejde načíst: {e}": "cannot load the list of sites: {e}",
+  "NAS může mít jen jeden objekt, „{n}“ značku ztratí. Pokračovat?": "Only one site can have the NAS, “{n}” will lose the mark. Continue?",
+  "zkontroluj název (1–60 znaků), popisek (do 300) a obrázek": "check the name (1–60 characters), description (up to 300) and image",
+  "Smazat objekt „{n}“ ({c} zařízení)?": "Delete site “{n}” ({c} devices)?",
+  "Na NAS se přesune do koše data/_deleted/, vrátit ho jde jen ručně.": "On the NAS it is moved to the bin data/_deleted/, it can only be restored manually.",
+  "Smazání se nepovedlo: server {s}": "Deleting failed: server {s}",
+  "Objekt „{id}“ na NAS není (je smazaný?).": "Site “{id}” is not on the NAS (deleted?).",
+  // ---- stavový řádek a hlášky ----
+  "{n} zařízení": "{n} devices",
+  "({n} skryto)": "({n} hidden)",
+  "({n} ztlumeno)": "({n} dimmed)",
+  "{n} spojů": "{n} links",
+  "{n} prostorů": "{n} areas",
+  "jen prohlížení: klikni na zařízení nebo spoj · F přizpůsobit · kolečko = zoom · ✎ Upravit odemkne": "view only: click a device or link · F fit · wheel = zoom · ✎ Edit unlocks",
+  "zamčeno: klikni na zařízení a uprav ho v panelu · F přizpůsobit · kolečko = zoom": "locked: click a device and edit it in the panel · F fit · wheel = zoom",
+  "Shift+táhni = nový spoj · Del smazat · Ctrl+Z zpět · Ctrl+D duplikovat · F přizpůsobit · kolečko = zoom": "Shift+drag = new link · Del delete · Ctrl+Z undo · Ctrl+D duplicate · F fit · wheel = zoom",
+  "táhni rámeček = posunout skupinu": "drag a frame = move the group",
+  "táhni čáru schématu = posunout, dvojklik = zpět automaticky": "drag a schematic line = move it, double-click = back to automatic",
+  "táhni za okraj nebo štítek = posunout celou skupinu": "drag the edge or label = move the whole group",
+  "„{n}“ je Wi-Fi klient ({s}), Wi-Fi se spojem nekreslí": "“{n}” is a Wi-Fi client ({s}), Wi-Fi is not drawn as a link",
+  "prohlížeč": "browser",
+  "na NAS je novější verze": "the NAS has a newer version",
+  "Zahodit změny z tohoto prohlížeče a načíst verzi z NAS?": "Discard the changes from this browser and load the version from the NAS?",
+  "neuloženo…": "not saved…",
+  "uloženo jen v prohlížeči {t}": "saved only in the browser {t}",
+  "uloženo do „{n}“": "saved to “{n}”",
+  "sloučeno se změnami z jiného zařízení": "merged with changes from another device",
+  "({n}× změna na obou, platí tato)": "({n}× changed on both, this one wins)",
+  "chyba zápisu: {e}": "write error: {e}",
+  "neuloženo – vyber složku 📁, nebo ulož jako nový soubor: ⋯ → 🌐 Export HTML": "not saved – choose a folder 📁, or save as a new file: ⋯ → 🌐 Export HTML",
+  "vyber složku 📁": "choose a folder 📁",
+  "ukládá se jen v prohlížeči": "saving only in the browser",
+  "načteny změny z jiného zařízení {t}": "loaded changes from another device {t}",
+  "Složka „{d}“ už obsahuje mapu.": "Folder “{d}” already contains a map.",
+  "OK = přepsat ji mapou z tohoto souboru, Zrušit = otevřít mapu ze složky.": "OK = overwrite it with the map from this file, Cancel = open the map from the folder.",
+  "složku nelze otevřít: {e}": "cannot open the folder: {e}",
+  "„{f}“ není export mapy sítě": "“{f}” is not a network map export",
+  "Import se nepovedl: {e}": "Import failed: {e}",
+  "Nahradit tuto mapu ({c} zařízení) mapou „{n}“ ze souboru?": "Replace this map ({c} devices) with the map “{n}” from the file?",
+  "V exportu chybí {m}: u stejných zařízení zůstanou z této mapy.": "The export is missing {m}: for the same devices they are kept from this map.",
+  "Ctrl+Z import vrátí.": "Ctrl+Z undoes the import.",
+  "načtena mapa „{n}“ z exportu HTML": "loaded map “{n}” from the HTML export",
+  "přehled zkopírován do schránky": "overview copied to the clipboard",
+  "data v souboru jsou poškozená": "the data in the file are corrupted",
+  "NAS neodpovídá: {e}": "NAS is not responding: {e}",
+  // ---- network.md ----
+  "Zařízení: {d} · spojů: {l} · ─ kabel, ⇢ bezdrát, [id] typ \"název\"": "Devices: {d} · links: {l} · ─ cable, ⇢ wireless, [id] type \"name\"",
+  "Wi-Fi (SSID a jeho klienti, Wi-Fi se spojem nekreslí)": "Wi-Fi (SSID and its clients, Wi-Fi is not drawn as a link)",
+  "Porty (port→zařízení, ⚡ = PoE, VLAN: porty síť + tag tagované)": "Ports (port→device, ⚡ = PoE, VLAN: ports network + tag tagged)",
+  "Prostory (zařízení přímo v prostoru)": "Areas (devices directly in the area)",
+  "Napájení (zdroj ⚡→ spotřebič)": "Power (source ⚡→ load)",
+  "Další spoje (smyčky / záložní cesty)": "Other links (loops / backup paths)",
+  "Nepřipojená zařízení": "Unconnected devices",
+  "Firewall (shora dolů, první shoda vyhrává; zdroj → cíl, síť IP:port)": "Firewall (top to bottom, first match wins; source → destination, network IP:port)",
+  "Přesměrování portů / UPnP (:vnější port → cílová IP:port)": "Port forwarding / UPnP (:external port → destination IP:port)",
+  "Firewall: upozornění kontrol": "Firewall: check warnings",
+  "Firewall: poznámky": "Firewall: notes",
+  "veřejná ip": "public ip",
+  "výkon": "power",
+  "výdrž min": "runtime min",
+  "zásuvek": "outlets",
+  "absorpce J": "absorption J",
+  "umí pásma": "bands",
+  "kanál": "channel",
+  "poe rozpočet W": "poe budget W",
+  "místo": "location",
+  "pozn": "note",
+  "přípojka": "connection",
+  "rychlost": "speed",
+  "(neuvedené)": "(not specified)",
+  "vlany": "vlans",
+  "tag": "tag",
+  "duplicitní": "duplicate",
+  "volné: {p}": "free: {p}",
+  "PoE odběr {w} W": "PoE draw {w} W",
+  "podlaží": "floor",
+  "budova": "building",
+  "venku": "outdoor",
+  "vypnuto": "disabled",
+  "pravidlo": "rule",
+  "přesměrování": "forward",
+  "i kabelem, viz strom": "also wired, see tree",
+  "vysílá {h}": "broadcast by {h}",
+  "bez klientů": "no clients",
+  "neznámé SSID": "unknown SSID",
+  // ---- zástupné texty seznamových polí (LF) ----
+  "ID": "ID",
+  "název": "name",
+  "192.168.x.0/24": "192.168.x.0/24",
+  "název SSID": "SSID name",
+  "pásmo": "band",
+  "síť (VLAN)": "network (VLAN)",
+  "LAN": "LAN",
+  "porty: 1,2,4 · 5-8 · WAN · SFP1": "ports: 1,2,4 · 5-8 · WAN · SFP1",
+  "rychl.": "speed",
+  "bez PoE": "no PoE",
+};
+</script>
+
+<script>
 // =====================================================================================
 //  Mapa domácí sítě: editor topologie (vanilla JS + SVG, bez závislostí).
 //  Hlavní stav:
@@ -730,6 +1344,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&
 // číslo z textu s desetinnou čárkou i tečkou („12,5“ → 12.5), prázdné → NaN
 const num = v => parseFloat(String(v || '').replace(',', '.'));
 // přirozené řazení textů („2“ před „10“), prázdné na konec
+// řazení vždy podle češtiny (nezávisle na jazyce rozhraní), ať autoLayout dá v obou jazycích stejné rozložení
 const ncmp = (x, y) => String(x ?? '~').localeCompare(String(y ?? '~'), 'cs', {numeric: true});
 const g10 = v => Math.round(v / 10) * 10;  // mřížka 10 px
 const nextId = (arr, prefix) => prefix + (Math.max(0, ...arr.map(x => +x.id.slice(prefix.length) || 0)) + 1);
@@ -753,6 +1368,95 @@ function ranges(a) {
     i = j;
   }
   return o.join(',');
+}
+
+// ---------- jazyk ----------
+// Texty v kódu jsou česky, tr() je přeloží do jazyka rozhraní (slovník EN, klíč = český text; chybějící překlad
+// zůstane česky a zapíše se do trMiss kvůli testu). Parametry {jméno}: tr('Smazat {n} zařízení?', {n: 3}).
+// Hodnoty, které se ukládají do dat (WAN, MR, BANDS, PRL, PSP, PPOE), zůstávají česky, překládá se jen jejich zobrazení.
+// Jazyk je společný pro všechny objekty (localStorage netmapLang); bez ruční volby podle prohlížeče (cs/sk = čeština, jinak angličtina).
+const LANGS = {cs: ['CZ', 'Čeština'], en: ['EN', 'English']};
+let lang = lsGet('netmapLang', '');
+if (!LANGS[lang]) lang = /^(cs|sk)\b/i.test(navigator.language || '') ? 'cs' : 'en';
+const trMiss = new Set();
+function tr(s, p) {
+  let r = s;
+  if (lang != 'cs' && /\p{L}/u.test(s)) {
+    r = EN[s];
+    if (r == null) {
+      trMiss.add(s);
+      r = s;
+    }
+  }
+  return p ? r.replace(/\{(\w+)\}/g, (m, k) => k in p ? p[k] : m) : r;
+}
+// text k překladu v konstantě: vrátí ho beze změny (přeloží se až při zobrazení přes tr), kontrola i18n-check ho najde jako klíč
+function trK(s) {
+  return s;
+}
+// jazyk pro čísla, data a řazení
+const loc = () => lang == 'cs' ? 'cs' : 'en';
+// Popisky v konstantách (typy zařízení, spojů, prostorů, pole, vrstvy, barevné režimy) se přepíšou na místě,
+// původní české texty drží C0 (pořadí jako v seznamu cs)
+let C0;
+function trConst() {
+  const cs = [[T, 0], [L, 0], [AK, 1], [FL], [LY], [THEMES, 1]];
+  C0 ||= cs.map(([o, i]) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, i == null ? v : v[i]])));
+  cs.forEach(([o, i], j) => {
+    for (const k in o) {
+      if (i == null) o[k] = tr(C0[j][k]);
+      else o[k][i] = tr(C0[j][k]);
+    }
+  });
+}
+// Statické texty stránky (hlavička, okna, patička): text uzlu a atributy title/placeholder. Projdou se jednou
+// na začátku (dynamický obsah je ještě prázdný), původní česká verze zůstane v TR0, takže jde přepínat tam i zpět.
+const TR0 = new Map();  // textový uzel nebo [prvek, atribut] → český text
+function trDom() {
+  if (!TR0.size) {
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n; (n = w.nextNode());) {
+      if (n.data.trim() && !n.parentNode.closest('script,style')) TR0.set(n, n.data);
+    }
+    for (const el of document.body.querySelectorAll('[title],[placeholder]')) {
+      for (const a of ['title', 'placeholder']) if (el.hasAttribute(a)) TR0.set([el, a], el.getAttribute(a));
+    }
+  }
+  // mezery kolem textu (odsazení v HTML, mezera za zaškrtávátkem) zůstanou, přeloží se jádro
+  const one = s => s.replace(/^(\s*)([\s\S]*?)(\s*)$/, (m, a, b, c) => a + tr(b) + c);
+  for (const [k, s] of TR0) {
+    if (Array.isArray(k)) k[0].setAttribute(k[1], one(s));
+    else k.data = one(s);
+  }
+}
+// přepnutí jazyka: konstanty, statické texty a všechno, co se kreslí
+function setLang(v, keep) {
+  lang = LANGS[v] ? v : 'en';
+  if (keep) lsSet('netmapLang', lang);
+  // ruční volbu pozná i server na NAS (přihlašovací stránka, jazyk ukázky na prázdném serveru)
+  if (lsGet('netmapLang')) document.cookie = 'netmapLang=' + lang + '; path=/; max-age=31536000; samesite=strict';
+  document.documentElement.lang = lang;
+  trConst();
+  trDom();
+  for (const b of [$('#bLang'), $('#obLang')]) {
+    b.textContent = LANGS[lang][0];
+    b.title = tr('Jazyk: {l}. Klikni pro přepnutí (čeština / angličtina).', {l: LANGS[lang][1]});
+  }
+}
+function nextLang() {
+  const k = Object.keys(LANGS);
+  setLang(k[(k.indexOf(lang) + 1) % k.length], 1);
+  setTheme(theme);
+  setLock(locked);
+  setWide(wide);
+  updDir();
+  palRender();
+  if (document.body.classList.contains('objs')) obRender();
+  else {
+    render();
+    renderProps();
+  }
+  showStatus();
 }
 
 // ---------- stav ----------
@@ -869,7 +1573,7 @@ function imgLoad(file, d) {
   };
   im.onerror = () => {
     URL.revokeObjectURL(url);
-    alert('Obrázek se nepodařilo načíst.');
+    alert(tr('Obrázek se nepodařilo načíst.'));
   };
   im.src = url;
 }
@@ -1044,7 +1748,7 @@ function pwHtml() {
 function setPort(l, devId, v, inp) {
   const k = l.a == devId ? 'pa' : 'pb', o = portBusy(devId, v, l.id);
   if (o) {
-    pWarn = `Port ${v} na „${nm(byId(devId))}“ už používá „${nm(o)}“, změna se neuložila.`;
+    pWarn = tr('Port {p} na „{d}“ už používá „{o}“, změna se neuložila.', {p: v, d: nm(byId(devId)), o: nm(o)});
     if (inp) { inp.style.borderColor = '#dc2626'; inp.title = pWarn; }
     return false;
   }
@@ -1069,7 +1773,7 @@ function vlList() {
 const vlFind = s => s ? vlList().find(v => v.n == s || v.id == s) : null;
 const vlName = s => vlFind(s) ? vlK(vlFind(s)) : s;  // „30“ → „IoT“, když má IoT ID 30
 const vlC = s => { const i = vlList().indexOf(vlFind(s)); return i < 0 ? '#9ca3af' : VC[i % VC.length]; };
-const vlLab = s => { const v = vlFind(s); return v ? (v.id && v.n ? v.id + ' · ' + v.n : vlK(v)) : s + ' (neznámá)'; };
+const vlLab = s => { const v = vlFind(s); return v ? (v.id && v.n ? v.id + ' · ' + v.n : vlK(v)) : s + ' (' + tr('neznámá') + ')'; };
 const vlChip = (s, tag) => `<span class="vc" style="--vc:${vlC(s)}">${esc(vlLab(s))}${tag ? ' <i>tag</i>' : ''}</span>`;
 const vlOpts = () => vlList().map(vlK);
 // WAN a linka (DSL/ONT/koax) vedou ven k poskytovateli, VLAN se na nich nenastavuje
@@ -1111,29 +1815,29 @@ function vlMap() {
       const ps = Object.values(pvAll(d));
       r.u = [...new Set(ps.map(x => x.u).filter(Boolean))];
       r.t = [...new Set(ps.flatMap(x => x.t || []))].filter(x => !r.u.includes(x));
-      r.src = 'z nastavení portů';
+      r.src = tr('z nastavení portů');
     } else {      // podle portu nadřazeného zařízení (blíž ke kořeni)
       const up = adj[id].filter(([o]) => dep[o] < dep[id]).sort((x, y) => dep[x[0]] - dep[y[0]])[0];
       if (up) {
         const [o, l] = up, od = byId(o), pp = myPort(l, o), pv = pvOf(od, pp);
-        if (pv) Object.assign(r, {u: pv.u ? [pv.u] : [], t: pv.t || [], src: `z portu ${pp} na „${nm(od)}“`});
+        if (pv) Object.assign(r, {u: pv.u ? [pv.u] : [], t: pv.t || [], src: tr('z portu {p} na „{d}“', {p: pp, d: nm(od)})});
         else if (!hasPv(od) && !od.vlans?.length) {
           const pr = get(o);
-          if (pr.src) Object.assign(r, {u: pr.u, t: pr.t, src: `přes „${nm(od)}“ (${pr.src})`});
+          if (pr.src) Object.assign(r, {u: pr.u, t: pr.t, src: tr('přes „{d}“ ({s})', {d: nm(od), s: pr.src})});
         }
       }
     }
     if (!isPass(d)) r.t = [];
     const ws = isWlc(d) && wlFind(d.ssid)?.vlan;  // Wi-Fi klient: síť ze SSID (s kabelem navíc k síti portu)
     if (ws && !r.u.includes(vlName(ws))) {
-      const s = `ze SSID „${d.ssid}“`;
+      const s = tr('ze SSID „{s}“', {s: d.ssid});
       r.u = [...r.u, vlName(ws)];
-      r.src = r.src ? r.src + ' a ' + s : s;
+      r.src = r.src ? r.src + ' ' + tr('a') + ' ' + s : s;
     }
     if (d.vlan) {  // ruční pole VLAN má přednost, nesoulad s portem / SSID se jen ohlásí
       const m = vlName(d.vlan);
       if (r.u.length && !r.u.includes(m)) r.warn = `${r.src}: ${r.u.join(', ')}`;
-      Object.assign(r, {u: [m], src: 'zadané ručně'});
+      Object.assign(r, {u: [m], src: tr('zadané ručně')});
     }
     return r;
   };
@@ -1179,7 +1883,7 @@ function setPv(d, p, u, tog) {
 const VL_NONE = '∅';
 let vlOff = lsGet(lsK('netmapVl'), {});
 const vlKeys = () => [...vlOpts(), VL_NONE];
-const vlfLab = k => k == VL_NONE ? 'bez VLAN' : vlLab(k);
+const vlfLab = k => k == VL_NONE ? tr('bez VLAN') : vlLab(k);
 const vlDot = k => `<span class="fdot" style="background:${k == VL_NONE ? 'transparent;border:1px solid #9ca3af' : vlC(k)}"></span>`;
 // je zařízení schované filtrem VLAN?
 function vlHid(d) {
@@ -1197,7 +1901,7 @@ function vlfSave() {
 function vlfMenu() {
   if (!vlList().length) return '';
   return vlKeys().map(k => `<label><input type="checkbox" data-vlf="${esc(k)}"${vlOff[k] ? '' : ' checked'}>${vlDot(k)}${esc(vlfLab(k))}`
-    + `<button class="mini" data-vlonly="${esc(k)}" title="Zobrazit jen tuto síť">jen</button></label>`).join('');
+    + `<button class="mini" data-vlonly="${esc(k)}" title="${tr('Zobrazit jen tuto síť')}">${tr('jen')}</button></label>`).join('');
 }
 // zaškrtávátko sítě: zobrazit/schovat; poslední zapnutou síť nejde vypnout
 function onVlChange(c) {
@@ -1232,7 +1936,7 @@ function wlList(ds = D.devices) {
   return ds.flatMap(d => d.ssids || []).filter(s => s.n && !seen.has(s.n) && seen.add(s.n));
 }
 const wlFind = n => n && n != WL_UNK ? wlList().find(s => s.n == n) : null;
-const wlLab = n => n == WL_UNK ? 'Wi-Fi, síť neuvedená' : n + (wlFind(n) ? '' : ' (neznámá)');
+const wlLab = n => n == WL_UNK ? tr('Wi-Fi, síť neuvedená') : n + (wlFind(n) ? '' : ' (' + tr('neznámá') + ')');
 // kdo SSID vysílá (router, AP)
 const wlHosts = n => D.devices.filter(d => d.ssids?.some(s => s.n == n));
 // pásma z textu: „2.4+5 GHz“ → ['2.4', '5']
@@ -1303,17 +2007,17 @@ function wlRename(old, nw) {
 function wlSel(d) {
   const ss = wlList(), cur = d.ssid || '';
   const opt = (v, t) => `<option value="${esc(v)}"${v == cur ? ' selected' : ''}>${esc(t)}</option>`;
-  const lab = s => [s.n, s.band, s.vlan && 'síť ' + vlName(s.vlan)].filter(Boolean).join(' · ');
+  const lab = s => [s.n, s.band && tr(s.band), s.vlan && tr('síť {v}', {v: vlName(s.vlan)})].filter(Boolean).join(' · ');
   const known = cur == WL_UNK || !cur || ss.some(s => s.n == cur);
-  let h = `<label>Wi-Fi (SSID)<select data-f="ssid">${opt('', '— ne, kabel / jinak —')}${ss.map(s => opt(s.n, lab(s))).join('')}`
-    + `${known ? '' : opt(cur, wlLab(cur))}${opt(WL_UNK, '📶 Wi-Fi, síť neuvedená')}</select></label>`;
+  let h = `<label>Wi-Fi (SSID)<select data-f="ssid">${opt('', '— ' + tr('ne, kabel / jinak') + ' —')}${ss.map(s => opt(s.n, lab(s))).join('')}`
+    + `${known ? '' : opt(cur, wlLab(cur))}${opt(WL_UNK, '📶 ' + tr('Wi-Fi, síť neuvedená'))}</select></label>`;
   if (!cur) return h;
   const s = wlFind(cur), hs = s ? wlHosts(cur).map(nm) : [], b = wlBand(d);
-  const info = [hs.length && 'vysílá ' + hs.join(', '), b && 'připojí se na ' + b].filter(Boolean).join(' · ');
+  const info = [hs.length && tr('vysílá {d}', {d: hs.join(', ')}), b && tr('připojí se na {b}', {b})].filter(Boolean).join(' · ');
   h += field('bands', d.bands);
-  if (b === null) h += `<p class="hint ov">⚠ Zařízení neumí pásmo sítě ${esc(cur)} (${esc(s.band)}).</p>`;
+  if (b === null) h += `<p class="hint ov">⚠ ${tr('Zařízení neumí pásmo sítě {s} ({b}).', {s: esc(cur), b: esc(s.band)})}</p>`;
   else if (info) h += `<p class="hint">${esc(info)}</p>`;
-  if (cur == WL_UNK) h += `<p class="hint">${ss.length ? 'Vyber síť ze seznamu.' : 'Sítě (SSID) zadej u routeru nebo AP, pak je tu vybereš.'}</p>`;
+  if (cur == WL_UNK) h += `<p class="hint">${tr(ss.length ? 'Vyber síť ze seznamu.' : 'Sítě (SSID) zadej u routeru nebo AP, pak je tu vybereš.')}</p>`;
   return h;
 }
 // Wi-Fi klient bez datového spoje (bez kabelu, i když ho napájí UPS): stojí v bloku Wi-Fi pod hlavičkou svého SSID
@@ -1324,12 +2028,12 @@ const wlSB = n => { const b = bandSet(wlFind(n)?.band); return b.length ? b.join
 function wlSub(d) {
   if (!wlFree(d)) return '';
   const b = wlBand(d);
-  return b === null ? '⚠ pásmo' : b && b != wlSB(d.ssid) ? b : '';
+  return b === null ? '⚠ ' + tr('pásmo') : b && b != wlSB(d.ssid) ? b : '';
 }
 // hlavička skupiny: [SSID, zbytek] (pásmo, síť VLAN)
 function wlHead(n) {
   const s = wlFind(n);
-  return [n == WL_UNK ? 'Wi-Fi, síť neuvedená' : n + (s ? '' : ' (neznámá)'), [wlSB(n), s?.vlan && 'síť ' + vlName(s.vlan)].filter(Boolean).join(' · ')];
+  return [wlLab(n), [wlSB(n), s?.vlan && tr('síť {v}', {v: vlName(s.vlan)})].filter(Boolean).join(' · ')];
 }
 const wlHeadTxt = n => '📶 ' + wlHead(n).filter(Boolean).join(' · ');
 const WLH_DX = 220, WLH_DY = 130;  // klienti stejného SSID blíž než tohle patří pod jednu hlavičku
@@ -1363,8 +2067,8 @@ function wlSum(d) {
   if (!ss.length) return '';
   const cnt = n => D.devices.filter(x => isWlc(x) && x.ssid == n).length;
   const unk = cnt(WL_UNK), fix = unk ? wlFix(1) : 0;
-  return `<p class="hint">Klienti: ${ss.map(s => esc(s.n) + ' ' + cnt(s.n)).join(' · ')}${unk ? ` · síť neuvedená ${unk}` : ''}</p>`
-    + (fix ? `<div class="row"><button data-act="wlfix" title="Klienti se sítí „neuvedená“ dostanou SSID se stejnou VLAN">📶 Přiřadit SSID podle VLAN (${fix})</button></div>` : '');
+  return `<p class="hint">${tr('Klienti')}: ${ss.map(s => esc(s.n) + ' ' + cnt(s.n)).join(' · ')}${unk ? ` · ${tr('síť neuvedená')} ${unk}` : ''}</p>`
+    + (fix ? `<div class="row"><button data-act="wlfix" title="${tr('Klienti se sítí „neuvedená“ dostanou SSID se stejnou VLAN')}">📶 ${tr('Přiřadit SSID podle VLAN ({n})', {n: fix})}</button></div>` : '');
 }
 
 // ---------- vrstvy ----------
@@ -1416,9 +2120,9 @@ function lyEnsure(k) {
 // pořadí podlaží: suterén < přízemí < čísla < podkroví; neznámé uprostřed
 function lvO(s) {
   s = String(s).replace(/−/g, '-');
-  if (/sut|sklep|podzem/i.test(s)) return -1;
-  if (/p[řr][ií]zem/i.test(s)) return 0;
-  if (/podkrov|p[ůu]da/i.test(s)) return 90;
+  if (/sut|sklep|podzem|basement|cellar/i.test(s)) return -1;
+  if (/p[řr][ií]zem|ground/i.test(s)) return 0;
+  if (/podkrov|p[ůu]da|attic|loft/i.test(s)) return 90;
   const m = s.match(/-?\d+(?:[.,]\d+)?/);
   return m ? parseFloat(m[0].replace(',', '.')) : 50;
 }
@@ -1452,12 +2156,12 @@ function arfMenu() {
   if (!D.areas.length) return '';
   const row = (k, h, ico, n, cnt, under) => `<label${under ? ' class="off"' : ''} style="padding-left:${6 + h * 14}px">`
     + `<input type="checkbox" data-arf="${esc(k)}"${arF.off[k] ? '' : ' checked'}>${ico} ${esc(n)}${cnt ? ` <small>${cnt}</small>` : ''}`
-    + `<button class="mini" data-aronly="${esc(k)}" title="Zobrazit jen tento prostor">jen</button></label>`;
+    + `<button class="mini" data-aronly="${esc(k)}" title="${tr('Zobrazit jen tento prostor')}">${tr('jen')}</button></label>`;
   const none = D.devices.filter(d => !area(d.ar)).length;
-  return `<div class="seg arm" title="Co udělat se zařízeními ve vypnutých prostorech">`
-    + `<button data-arm="0"${arF.hide ? '' : ' class="on"'}>ztlumit</button><button data-arm="1"${arF.hide ? ' class="on"' : ''}>schovat</button></div>`
+  return `<div class="seg arm" title="${tr('Co udělat se zařízeními ve vypnutých prostorech')}">`
+    + `<button data-arm="0"${arF.hide ? '' : ' class="on"'}>${tr('ztlumit')}</button><button data-arm="1"${arF.hide ? ' class="on"' : ''}>${tr('schovat')}</button></div>`
     + arTree().map(([a, h]) => row(a.id, h, a.k == 'flr' ? flDot(a.n) : AKI(a.k), a.n, arDevs(a, 1).length, arOffA(area(a.par)))).join('')
-    + (none ? row(AR_NONE, 0, '∅', 'bez prostoru', none) : '');
+    + (none ? row(AR_NONE, 0, '∅', tr('bez prostoru'), none) : '');
 }
 // „jen“ = vypnout všechno mimo cestu k prostoru k a mimo něj (k = AR_NONE: jen zařízení bez prostoru), bez k vše zapnout
 function arOnly(k) {
@@ -1481,11 +2185,11 @@ function arOnly(k) {
 function vwActive() {
   const o = [];
   const ly = Object.keys(LY).filter(k => !lyOn[k]);
-  if (ly.length) o.push(['Vrstvy', ly.map(k => LY[k]).join(', ')]);
+  if (ly.length) o.push([tr('Vrstvy'), ly.map(k => LY[k]).join(', ')]);
   const vl = vlList().length ? vlKeys().filter(k => vlOff[k]) : [];
   if (vl.length) o.push(['VLAN', vl.map(vlfLab).join(', ')]);
   const ar = D.areas.length ? Object.keys(arF.off).filter(k => k == AR_NONE || area(k)) : [];  // smazaný prostor (undo ho může vrátit) nepočítat
-  if (ar.length) o.push([arF.hide ? 'Prostory (schované)' : 'Prostory (ztlumené)', ar.map(k => k == AR_NONE ? 'bez prostoru' : area(k)?.n).join(', ')]);
+  if (ar.length) o.push([arF.hide ? tr('Prostory (schované)') : tr('Prostory (ztlumené)'), ar.map(k => k == AR_NONE ? tr('bez prostoru') : area(k)?.n).join(', ')]);
   return o;
 }
 // přepíše obsah prvku jen při změně (jinak by ztratil hover a fokus)
@@ -1498,9 +2202,9 @@ function vwSet(id, h) {
 // tlačítko s odznakem a obsah okna; volá render
 function vwBar() {
   const act = vwActive(), s = $('#vwSum');
-  vwSet('vwSum', `👁 Zobrazení${act.length ? ` <span class="bdg">${act.length}</span>` : ''} ▾`);
+  vwSet('vwSum', `👁 ${tr('Zobrazení')}${act.length ? ` <span class="bdg">${act.length}</span>` : ''} ▾`);
   s.classList.toggle('hid', act.length > 0);
-  s.title = act.length ? 'Omezené zobrazení:\n' + act.map(([n, t]) => `${n}: ${t}`).join('\n') : 'Co se má na mapě zobrazit: vrstvy, sítě VLAN, prostory, popisky';
+  s.title = act.length ? tr('Omezené zobrazení:') + '\n' + act.map(([n, t]) => `${n}: ${t}`).join('\n') : tr('Co se má na mapě zobrazit: vrstvy, sítě VLAN, prostory, popisky');
   $('#vwReset').disabled = !act.length;
   vwSet('ly', lyMenu());
   vwSet('vlF', vlfMenu());
@@ -1965,7 +2669,7 @@ function gfSvg(f, i, rs) {
     else break;
   }
   const lab = f.wl ? '' : `<text class="gfl" x="${lx + 4}" y="${ly + 4}">${esc(f.lab)}</text>`;
-  return `<g class="gf${on}" data-gf="${i}"${dm}><title>${esc(f.lab)}: táhni za okraj nebo štítek = posunout celou skupinu</title>`
+  return `<g class="gf${on}" data-gf="${i}"${dm}><title>${esc(f.lab)}: ${tr('táhni za okraj nebo štítek = posunout celou skupinu')}</title>`
     + `<rect class="gfr" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="12"/>${lab}`
     + `<rect class="gfh" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="12"/>`
     + `<rect class="gft" x="${lx}" y="${ly - 9}" width="${lw}" height="16"/></g>`;
@@ -2153,12 +2857,13 @@ function devRing(d) {
 function showStatus() {
   const hidden = D.devices.length - VIS.size;
   $('#stAct').hidden = !store?.conflict;
-  $('#st').textContent = `${D.devices.length} zařízení${hidden > 0 ? ` (${hidden} skryto)` : ''}${DIM.size ? ` (${DIM.size} ztlumeno)` : ''} · ${D.links.length} spojů${D.areas.length ? ` · ${D.areas.length} prostorů` : ''} · ${saved}`
-    + (viewOnly ? '   |   👁 jen prohlížení: klikni na zařízení nebo spoj · F přizpůsobit · kolečko = zoom · ✎ Upravit odemkne'
-      : locked ? '   |   🔒 zamčeno: klikni na zařízení a uprav ho v panelu · F přizpůsobit · kolečko = zoom'
-      : `   |   Shift+táhni = nový spoj · Del smazat · Ctrl+Z zpět · Ctrl+D duplikovat · F přizpůsobit · kolečko = zoom`
-      + (showGF ? ' · táhni rámeček = posunout skupinu' : '')
-      + (V.sch ? ' · táhni čáru schématu = posunout, dvojklik = zpět automaticky' : ''));
+  $('#st').textContent = [tr('{n} zařízení', {n: D.devices.length}) + (hidden > 0 ? ' ' + tr('({n} skryto)', {n: hidden}) : '') + (DIM.size ? ' ' + tr('({n} ztlumeno)', {n: DIM.size}) : ''),
+    tr('{n} spojů', {n: D.links.length}), D.areas.length && tr('{n} prostorů', {n: D.areas.length}), saved].filter(Boolean).join(' · ')
+    + '   |   ' + (viewOnly ? '👁 ' + tr('jen prohlížení: klikni na zařízení nebo spoj · F přizpůsobit · kolečko = zoom · ✎ Upravit odemkne')
+      : locked ? '🔒 ' + tr('zamčeno: klikni na zařízení a uprav ho v panelu · F přizpůsobit · kolečko = zoom')
+      : tr('Shift+táhni = nový spoj · Del smazat · Ctrl+Z zpět · Ctrl+D duplikovat · F přizpůsobit · kolečko = zoom')
+      + (showGF ? ' · ' + tr('táhni rámeček = posunout skupinu') : '')
+      + (V.sch ? ' · ' + tr('táhni čáru schématu = posunout, dvojklik = zpět automaticky') : ''));
 }
 
 // ---------- panel vlastností: stavební kousky ----------
@@ -2170,7 +2875,7 @@ function field(f, v, lab) {
   const so = SELECT_F[f];
   if (so) {
     const list = [...so, ...(v && !so.includes(v) ? [v] : [])];  // neznámou hodnotu ze souboru nezahodit
-    return `<label>${lab}<select data-f="${f}"><option></option>${list.map(w => `<option${w == v ? ' selected' : ''}>${w}</option>`).join('')}</select></label>`;
+    return `<label>${lab}<select data-f="${f}"><option></option>${list.map(w => `<option value="${w}"${w == v ? ' selected' : ''}>${esc(tr(w))}</option>`).join('')}</select></label>`;
   }
   if (f == 'pp') return `<label>${lab}<input data-f="pp" type="number" min="0" max="50" step="1" value="${v}"></label>`;
   if (f == 'note') return `<label>${lab}<textarea data-f="note" rows="3">${v}</textarea></label>`;
@@ -2186,58 +2891,60 @@ function listField(f, arr) {
     const isVl = k == 'v' || k == 'vlan';  // výběr sítě (skupina portů, SSID) v barvě sítě
     const vs = isVl && r[k] ? ` class="vs" style="--vc:${vlC(r[k])}"` : '';
     return opt
-      ? `<select ${a}${vs}><option value="">${ph}</option>${opt.map(o => `<option value="${esc(o)}"${o == r[k] ? ' selected' : ''}>${esc(isVl ? vlLab(o) : o)}</option>`).join('')}</select>`
-      : `<input ${a} placeholder="${ph}" value="${esc(r[k])}"${k == 'vlan' ? ' list="vlanDL"' : ''}>`;
+      ? `<select ${a}${vs}><option value="">${tr(ph)}</option>${opt.map(o => `<option value="${esc(o)}"${o == r[k] ? ' selected' : ''}>${esc(isVl ? vlLab(o) : tr(o))}</option>`).join('')}</select>`
+      : `<input ${a} placeholder="${tr(ph)}" value="${esc(r[k])}"${k == 'vlan' ? ' list="vlanDL"' : ''}>`;
   };
   // ↑ posune řádek o jedno výš (pořadí = pořadí v mřížce portů, u VLAN i barva), × řádek odebere
   // u skupin portů ⧉ přidá pod řádek kopii se stejnými parametry a dalším volným portem
-  const btns = i => `<span class="lrb"><button data-act="lup" data-lf="${f}" data-i="${i}" title="Posunout výš"${i ? '' : ' disabled'}>↑</button>`
-    + (f == 'pg' ? `<button data-act="ldup" data-lf="${f}" data-i="${i}" title="Duplikovat (další port, stejné parametry)">⧉</button>` : '')
-    + `<button data-act="lrm" data-lf="${f}" data-i="${i}" title="Odebrat">×</button></span>`;
+  const btns = i => `<span class="lrb"><button data-act="lup" data-lf="${f}" data-i="${i}" title="${tr('Posunout výš')}"${i ? '' : ' disabled'}>↑</button>`
+    + (f == 'pg' ? `<button data-act="ldup" data-lf="${f}" data-i="${i}" title="${tr('Duplikovat (další port, stejné parametry)')}">⧉</button>` : '')
+    + `<button data-act="lrm" data-lf="${f}" data-i="${i}" title="${tr('Odebrat')}">×</button></span>`;
   const rows = (arr || []).map((r, i) => `<div class="lr lr-${f}"${f == 'vlans' ? ` style="--vc:${vlC(vlK(r))}"` : ''}>${LF[f].map(c => cell(r, i, c)).join('')}${btns(i)}</div>`);
-  const merge = f == 'pg' && pgCanMerge(selObj()) ? '<button data-act="pgmerge" class="add" title="Spojí skupiny se stejnou rolí, rychlostí, PoE a sítí, např. 1,2,3,4 → 1-4">⇊ sloučit stejné skupiny</button>' : '';
-  return `<label>${FL[f]}</label>${rows.join('')}<button data-act="ladd" data-lf="${f}" class="add">+ přidat</button>${merge}`;
+  const merge = f == 'pg' && pgCanMerge(selObj())
+    ? `<button data-act="pgmerge" class="add" title="${tr('Spojí skupiny se stejnou rolí, rychlostí, PoE a sítí, např. 1,2,3,4 → 1-4')}">⇊ ${tr('sloučit stejné skupiny')}</button>`
+    : '';
+  return `<label>${FL[f]}</label>${rows.join('')}<button data-act="ladd" data-lf="${f}" class="add">+ ${tr('přidat')}</button>${merge}`;
 }
 // mřížka ikon podle skupin ICG, filtrovaná hledáním icQ
 function icGrid(d) {
   const ql = icQ.toLowerCase();
   return ICG.map(([h, ks]) => {
-    const f = ks.filter(k => !ql || k.toLowerCase().includes(ql) || h.toLowerCase().includes(ql));
-    return f.length ? `<h4>${h}</h4><div class="ig">${f.map(k => `<button data-ic="${k}" title="${k}"${d.ic == k ? ' class="on"' : ''}>${icPath(k)}</button>`).join('')}</div>` : '';
-  }).join('') || '<p class="hint">Nic nenalezeno.</p>';
+    const f = ks.filter(k => !ql || k.toLowerCase().includes(ql) || h.toLowerCase().includes(ql) || tr(h).toLowerCase().includes(ql));
+    return f.length ? `<h4>${tr(h)}</h4><div class="ig">${f.map(k => `<button data-ic="${k}" title="${k}"${d.ic == k ? ' class="on"' : ''}>${icPath(k)}</button>`).join('')}</div>` : '';
+  }).join('') || `<p class="hint">${tr('Nic nenalezeno.')}</p>`;
 }
 function icPicker(d) {
-  let h = `<label>Ikona</label><div class="icr"><span class="icc">${icHtml(d)}</span><button data-act="icp">${icOpen ? 'Zavřít výběr' : 'Vybrat ikonu…'}</button>`
-    + `${d.ic ? '<button data-act="icx" title="Zpět na ikonu typu">↺ výchozí</button>' : ''}</div>`
-    + `<div class="icr"><label class="btn ibtn" title="Obrázek se ořízne na čtverec a zmenší na ${IMG_PX} px">🖼 ${d.img ? 'Jiný obrázek…' : 'Vlastní obrázek…'}<input type="file" accept="image/*" data-imgf hidden></label>`
-    + `${d.img ? '<button data-act="imgx">× bez obrázku</button>' : ''}</div>`;
+  let h = `<label>${tr('Ikona')}</label><div class="icr"><span class="icc">${icHtml(d)}</span><button data-act="icp">${tr(icOpen ? 'Zavřít výběr' : 'Vybrat ikonu…')}</button>`
+    + `${d.ic ? `<button data-act="icx" title="${tr('Zpět na ikonu typu')}">↺ ${tr('výchozí')}</button>` : ''}</div>`
+    + `<div class="icr"><label class="btn ibtn" title="${tr('Obrázek se ořízne na čtverec a zmenší na {px} px', {px: IMG_PX})}">🖼 ${tr(d.img ? 'Jiný obrázek…' : 'Vlastní obrázek…')}<input type="file" accept="image/*" data-imgf hidden></label>`
+    + `${d.img ? `<button data-act="imgx">× ${tr('bez obrázku')}</button>` : ''}</div>`;
   if (icOpen) {
-    h += `<input data-icq placeholder="🔍 hledat (router, nas, zigbee, light…)" value="${esc(icQ)}" style="margin-top:6px"><div id="icg">${icGrid(d)}</div>`
-      + `<label>nebo vlastní emoji<input data-f="ic" value="${isIc(d.ic) ? '' : esc(d.ic)}" placeholder="např. 🛰️"></label>`;
+    h += `<input data-icq placeholder="🔍 ${tr('hledat (router, nas, zigbee, light…)')}" value="${esc(icQ)}" style="margin-top:6px"><div id="icg">${icGrid(d)}</div>`
+      + `<label>${tr('nebo vlastní emoji')}<input data-f="ic" value="${isIc(d.ic) ? '' : esc(d.ic)}" placeholder="${tr('např. 🛰️')}"></label>`;
   }
   return h;
 }
 const optionsHtml = (o, cur, f = v => v) => Object.entries(o).map(([k, v]) => `<option value="${k}"${k == cur ? ' selected' : ''}>${f(v)}</option>`).join('');
 // popis skupiny portů: „Uplink · SFP 1G · PoE+ · síť IoT“ (bez role = LAN)
-const pgLab = g => [g.r || 'LAN', g.s, g.poe, !noVl(g) && g.v && 'síť ' + g.v].filter(Boolean).join(' · ');
+const pgLab = g => [g.r ? tr(g.r) : 'LAN', g.s && tr(g.s), g.poe && tr(g.poe), !noVl(g) && g.v && tr('síť {v}', {v: g.v})].filter(Boolean).join(' · ');
 // Mřížka portů zařízení po skupinách, s obsazením a PoE odběrem; klik na obsazený port vybere spoj
 function portGrid(d) {
   const gs = portGroups(d), pl = portList(d), pm = portMap(d.id), ex = Object.keys(pm).filter(p => !pl.includes(p));
   if (!pl.length && !ex.length) return '';
   const used = pl.filter(p => pm[p]).length, ps = poeSet(d), pu = poeUse(d), budget = num(d.poew);
   const poe = ps.size
-    ? ` · ⚡ ${ps.size} PoE${pu || budget ? `, <span class="${budget && pu > budget ? 'ov' : ''}" title="odběr / rozpočet">${+pu.toFixed(1)}${budget ? '/' + budget : ''} W</span>` : ''}`
+    ? ` · ⚡ ${ps.size} PoE${pu || budget ? `, <span class="${budget && pu > budget ? 'ov' : ''}" title="${tr('odběr / rozpočet')}">${+pu.toFixed(1)}${budget ? '/' + budget : ''} W</span>` : ''}`
     : '';
   const btn = (p, g) => {
     const c = pm[p] || [], pw = ps.has(p), pv = pvOf(d, p);
     const who = c.map(([o, l]) => nm(byId(o)) + ' (' + (L[l.t]?.[0] || l.t) + ')').join(', ');
     const watts = c.map(([, l]) => l.w).filter(Boolean).join('+');
-    const title = p + (g ? ' – ' + pgLab(g) : '') + (pw && watts ? ' (' + watts + ' W)' : '') + ': ' + (who || 'volný')
-      + (c.length > 1 ? ' – port použit vícekrát!' : '') + (g ? '' : ' – port není v seznamu portů')
+    const title = p + (g ? ' – ' + pgLab(g) : '') + (pw && watts ? ' (' + watts + ' W)' : '') + ': ' + (who || tr('volný'))
+      + (c.length > 1 ? ' – ' + tr('port použit vícekrát!') : '') + (g ? '' : ' – ' + tr('port není v seznamu portů'))
       + (pv ? ' · VLAN ' + [pv.u && vlLab(pv.u), ...(pv.t || []).map(v => vlLab(v) + ' (tag)')].filter(Boolean).join(', ') : '');
     const cls = (c.length > 1 ? ' dup' : c.length ? ' use' : '') + (g ? '' : ' ex') + (pv?.u ? ' vl' : '') + (PRC[g?.r] ? ' r-' + PRC[g.r] : '');
     return `<button class="pt${cls}"${pv?.u ? ` style="--vc:${vlC(pv.u)}"` : ''}${c.length ? ` data-sel="l:${c[0][1].id}"` : ''} title="${esc(title)}">`
-      + `<b>${pw ? '<i>⚡</i>' : ''}${esc(p)}${pv?.t ? '<sup>T</sup>' : ''}</b><span>${esc(c.length ? c.map(([o]) => nm(byId(o))).join(', ') : 'volný')}</span></button>`;
+      + `<b>${pw ? '<i>⚡</i>' : ''}${esc(p)}${pv?.t ? '<sup>T</sup>' : ''}</b><span>${esc(c.length ? c.map(([o]) => nm(byId(o))).join(', ') : tr('volný'))}</span></button>`;
   };
   // jedna skupina = podnadpis a mřížka; jediná skupina LAN bez dalších údajů podnadpis nemá
   const block = (lab, btns) => (lab ? `<div class="pgh">${esc(lab)}</div>` : '') + `<div class="pg">${btns.join('')}</div>`;
@@ -2250,19 +2957,19 @@ function portGrid(d) {
     else mg.push({g, ps: [...ps]});
   }
   const plain = mg.length == 1 && !pgLab(mg[0].g).includes(' · ') && !mg[0].g.r;
-  return `<div class="sub">${pl.length ? `Obsazeno ${used}/${pl.length}` : 'Zapojené porty'}${poe}</div>`
-    + (dup.length ? `<p class="hint ov">⚠ Port ${esc(ranges(dup))} je ve víc skupinách, platí první z nich.</p>` : '')
+  return `<div class="sub">${pl.length ? tr('Obsazeno {a}/{b}', {a: used, b: pl.length}) : tr('Zapojené porty')}${poe}</div>`
+    + (dup.length ? `<p class="hint ov">⚠ ${tr('Port {p} je ve víc skupinách, platí první z nich.', {p: esc(ranges(dup))})}</p>` : '')
     + mg.filter(x => x.ps.length).map(({g, ps}) => block(plain ? '' : pgLab(g), ps.map(p => btn(p, g)))).join('')
-    + (ex.length ? block('mimo seznam portů', ex.map(p => btn(p))) : '');
+    + (ex.length ? block(tr('mimo seznam portů'), ex.map(p => btn(p))) : '');
 }
 // výběr portu na zařízení dev pro spoj l: seznam portů (obsazené zakázané), nebo volný text, když zařízení porty nemá
 function portSel(dev, l, attr, cur) {
   const pl = portList(dev);
-  if (!pl.length) return `<input ${attr} value="${esc(cur)}" placeholder="port">`;
+  if (!pl.length) return `<input ${attr} value="${esc(cur)}" placeholder="${tr('port')}">`;
   const list = [...pl, ...(cur && !pl.includes(cur) ? [cur] : [])];
-  return `<select ${attr}><option value="">${cur ? '— bez portu' : 'port…'}</option>${list.map(p => {
+  return `<select ${attr}><option value="">${tr(cur ? '— bez portu' : 'port…')}</option>${list.map(p => {
     const o = p != cur && portBusy(dev.id, p, l.id);
-    return `<option value="${esc(p)}"${p == cur ? ' selected' : ''}${o ? ' disabled' : ''}>${esc(p)}${o ? ' · obsazený (' + esc(nm(o)) + ')' : ''}</option>`;
+    return `<option value="${esc(p)}"${p == cur ? ' selected' : ''}${o ? ' disabled' : ''}>${esc(p)}${o ? ' · ' + tr('obsazený ({d})', {d: esc(nm(o))}) : ''}</option>`;
   }).join('')}</select>`;
 }
 
@@ -2272,26 +2979,26 @@ function pvTable(d) {
   const vs = vlList(), pm = portMap(d.id);
   const pl = [...new Set([...portList(d), ...Object.keys(pm), ...Object.keys(d.pvl || {})])].filter(p => !noVl(portGrp(d, p)));
   if (!vs.length || !pl.length) return '';
-  const opts = (cur, gv) => `<option value="">${gv ? '↩ podle skupiny' : '—'}</option>`
+  const opts = (cur, gv) => `<option value="">${gv ? '↩ ' + tr('podle skupiny') : '—'}</option>`
     + vs.map(v => `<option value="${esc(vlK(v))}"${vlK(v) == cur ? ' selected' : ''}>${esc(vlLab(vlK(v)))}</option>`).join('')
     + (cur && !vlFind(cur) ? `<option selected>${esc(cur)}</option>` : '');  // neznámou síť ze souboru nezahodit
   const tagBtn = (p, pv, v) => {
     const k = vlK(v), on = pv.t?.includes(k);
-    return `<button data-act="pvt" data-p="${esc(p)}" data-v="${esc(k)}" class="vt${on ? ' on' : ''}" style="--vc:${vlC(k)}" title="${esc(vlLab(k))}: tagovaná na portu ${esc(p)}"${pv.u == k ? ' disabled' : ''}>`
+    return `<button data-act="pvt" data-p="${esc(p)}" data-v="${esc(k)}" class="vt${on ? ' on' : ''}" style="--vc:${vlC(k)}" title="${esc(tr('{v}: tagovaná na portu {p}', {v: vlLab(k), p}))}"${pv.u == k ? ' disabled' : ''}>`
       + `<span class="s">${esc(v.id || k.slice(0, 3))}</span><span class="f">${esc(vlLab(k))}</span></button>`;
   };
   const row = p => {
     const pv = pvOf(d, p) || {}, gv = portGrp(d, p)?.v, who = (pm[p] || []).map(([o]) => nm(byId(o))).join(', ');
-    const own = d.pvl?.[p]?.u ? ' title="Výjimka oproti skupině portů"' : '';
-    return `<div class="pvr"><b title="${esc(who || 'volný')}">${esc(p)}${d.pvl?.[p] && gv ? '*' : ''}<small>${esc(who)}</small></b>`
+    const own = d.pvl?.[p]?.u ? ` title="${tr('Výjimka oproti skupině portů')}"` : '';
+    return `<div class="pvr"><b title="${esc(who || tr('volný'))}">${esc(p)}${d.pvl?.[p] && gv ? '*' : ''}<small>${esc(who)}</small></b>`
       + `<select data-pv="${esc(p)}"${pv.u ? ` class="vs" style="--vc:${vlC(pv.u)}"` : ''}${own}>${opts(pv.u, gv)}</select>`
       + `<span class="pvt">${vs.map(v => tagBtn(p, pv, v)).join('')}</span></div>`;
   };
-  return `<details class="pvd"${pvOpen ? ' open' : ''}><summary data-act="pvo">🏷 VLANy na portech (nastaveno ${Object.keys(pvAll(d)).length}/${pl.length})</summary>`
-    + '<p class="hint">Síť pro celou skupinu portů nastavíš výš ve sloupci „síť“ u skupiny, tady jsou výjimky (* = port se liší od skupiny). '
-    + 'Netagovaná = síť portu (access / PVID), dostane ji vše, co je do portu zapojené. Tagované = další sítě po stejném kabelu (trunk) pro spravovaný switch nebo AP.</p>'
-    + '<div class="pvr pvh"><span>port</span><span>netagovaná</span><span>tagované</span></div>'
-    + `<div class="pvr"><b>vše</b><select data-pvall title="Nastaví netagovanou síť všem portům">${opts('')}</select><span></span></div>`
+  return `<details class="pvd"${pvOpen ? ' open' : ''}><summary data-act="pvo">🏷 ${tr('VLANy na portech (nastaveno {a}/{b})', {a: Object.keys(pvAll(d)).length, b: pl.length})}</summary>`
+    + `<p class="hint">${tr('Síť pro celou skupinu portů nastavíš výš ve sloupci „síť“ u skupiny, tady jsou výjimky (* = port se liší od skupiny).')} `
+    + `${tr('Netagovaná = síť portu (access / PVID), dostane ji vše, co je do portu zapojené. Tagované = další sítě po stejném kabelu (trunk) pro spravovaný switch nebo AP.')}</p>`
+    + `<div class="pvr pvh"><span>${tr('port')}</span><span>${tr('netagovaná')}</span><span>${tr('tagované')}</span></div>`
+    + `<div class="pvr"><b>${tr('vše')}</b><select data-pvall title="${tr('Nastaví netagovanou síť všem portům')}">${opts('')}</select><span></span></div>`
     + pl.map(row).join('') + '</details>';
 }
 // Přehled sítí u routeru: kde je která síť (netagovaně / tagovaně na portech všech zařízení) a která SSID do ní patří
@@ -2314,8 +3021,8 @@ function vlSum() {
       + `<div class="vsp">${cell(ps)}</div>`;
   });
   if (!rows.length) return '';
-  return '<div class="sub">Kde jsou sítě</div>'
-    + '<div class="vsm"><span class="vsh">síť</span><span class="vsh">Wi-Fi<i class="vsi"> a porty</i></span><span class="vsh">porty</span>'
+  return `<div class="sub">${tr('Kde jsou sítě')}</div>`
+    + `<div class="vsm"><span class="vsh">${tr('síť')}</span><span class="vsh">Wi-Fi<i class="vsi"> ${tr('a porty')}</i></span><span class="vsh">${tr('porty')}</span>`
     + rows.join('') + '</div>';
 }
 // Členství zařízení ve VLAN a odkud se vzalo (router sítě definuje, tam se neukazuje)
@@ -2323,9 +3030,9 @@ function vlInfo(d) {
   if (d.vlans?.length || !vlList().length) return '';
   const m = vlMap()[d.id];
   const chips = [...m.u.map(v => vlChip(v)), ...m.t.map(v => vlChip(v, 1))].join('');
-  return '<div class="sub">Patří do sítí</div>' + (chips
+  return `<div class="sub">${tr('Patří do sítí')}</div>` + (chips
     ? `<div class="vcs">${chips}</div><p class="hint">${esc(m.src)}${m.warn ? ` · <span class="ov">⚠ ${esc(m.warn)}</span>` : ''}</p>`
-    : '<p class="hint">Nezjištěno. Přiřaď síť portu na nadřazeném zařízení (🏷 VLANy na portech), nebo ji vyplň v poli VLAN.</p>');
+    : `<p class="hint">${tr('Nezjištěno. Přiřaď síť portu na nadřazeném zařízení (🏷 VLANy na portech), nebo ji vyplň v poli VLAN.')}</p>`);
 }
 
 // ---------- panel vlastností: obsah podle výběru ----------
@@ -2334,7 +3041,7 @@ function renderProps() {
   let h;
   if (sel?.k == 'd' && byId(sel.id)) h = devProps(byId(sel.id));
   else if (sel?.k == 'l' && lnk(sel.id)) h = linkProps(lnk(sel.id));
-  else { sel = null; h = viewOnly ? helpView() : HELP_TOPO; }
+  else { sel = null; h = viewOnly ? helpView() : helpTopo(); }
   $('#props').innerHTML = h;
   roLock($('#props'));
 }
@@ -2343,15 +3050,15 @@ function setWide(on) {
   wide = on ? 1 : 0;
   lsSet('netmapWide', wide);
   document.body.classList.toggle('wide', !!wide);
-  $('#bWide').title = wide ? 'Zúžit panel' : 'Rozšířit panel ke středu';
+  $('#bWide').title = tr(wide ? 'Zúžit panel' : 'Rozšířit panel ke středu');
 }
 // tlačítko do panelu routeru (výchozí brány): počet pravidel a upozornění kontrol
 function fwBtn() {
   // export HTML bez firewallu: říct to, ať prázdná tabulka nevypadá jako ztracená pravidla
-  const cut = EMB?.strip?.fw && !D.fw ? '<p class="hint">🛡 Firewall byl při exportu vynechán.</p>' : '';
+  const cut = EMB?.strip?.fw && !D.fw ? `<p class="hint">🛡 ${tr('Firewall byl při exportu vynechán.')}</p>` : '';
   if (viewOnly && !fwRows('rules').length && !fwRows('fwd').length && !D.fw?.note) return cut;
   const n = fwRows('rules').length, w = ['rules', 'fwd'].flatMap(fwChecks).filter(c => fwWorst(c) == 'w').length;
-  return cut + `<div class="row"><button data-act="fw" title="Pravidla firewallu a přesměrování portů ve velkém okně">🛡 Pravidla firewallu (${n})${w ? ` · <span class="ov">⚠ ${w}</span>` : ''}</button></div>`;
+  return cut + `<div class="row"><button data-act="fw" title="${tr('Pravidla firewallu a přesměrování portů ve velkém okně')}">🛡 ${tr('Pravidla firewallu ({n})', {n})}${w ? ` · <span class="ov">⚠ ${w}</span>` : ''}</button></div>`;
 }
 // sekce panelu: nadpis s oddělovací čarou, prázdná sekce se nevykreslí
 const sec = (title, body) => body ? `<h4 class="sh">${title}</h4>${body}` : '';
@@ -2373,58 +3080,65 @@ function devProps(d) {
   const nb = adjMap()[d.id].map(([o, l]) => {
     const wired = !isWl(l.t), port = myPort(l, d.id);
     return `<li class="lk"><span data-sel="l:${l.id}">${wired ? '─' : '⇢'} ${esc(L[l.t]?.[0] || l.t)} → ${esc(nm(byId(o)))}</span>`
-      + `${(wired && !isPw(l.t)) || port ? portSel(d, l, `data-lp="${l.id}" title="Port na tomto zařízení"`, port) : ''}</li>`;
+      + `${(wired && !isPw(l.t)) || port ? portSel(d, l, `data-lp="${l.id}" title="${tr('Port na tomto zařízení')}"`, port) : ''}</li>`;
   }).join('');
   return `<h3>${icHtml(d)} <span class="dn">${esc(nm(d))}</span></h3>`
     + `<datalist id="vlanDL">${vlList().map(v => `<option value="${esc(vlK(v))}">${esc([v.id, v.net].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>`
     + field('n', d.n)
-    + `<label>Typ zařízení<select data-f="t">${optionsHtml(T, d.t, v => v[1] + ' ' + v[0])}</select></label>`
+    + `<label>${tr('Typ zařízení')}<select data-f="t">${optionsHtml(T, d.t, v => v[1] + ' ' + v[0])}</select></label>`
     + icPicker(d)
-    + sec('Údaje', info.map(fl).join(''))
-    + sec(has('ssids') || wlCan(d) ? 'Sítě a Wi-Fi' : 'Síť (VLAN)', nets)
-    + sec('Porty', ports)
-    + sec(`Spoje (${adjMap()[d.id].length})`, pwHtml() + (nb ? `<ul>${nb}</ul>` : '<p class="hint">Žádné. Shift+táhni na jiné zařízení.</p>'))
-    + `<div class="row"><button data-act="dup">Duplikovat</button><button data-act="del" class="danger">Smazat</button></div>`
-    + `<p class="hint">ID: ${d.id}${D.areas.length ? '' : '<br>Prostory (dům, patra, místnosti) založíš v 🏠 Prostory, umístění pak vybereš z nabídky.'}</p>`;
+    + sec(tr('Údaje'), info.map(fl).join(''))
+    + sec(has('ssids') || wlCan(d) ? tr('Sítě a Wi-Fi') : tr('Síť (VLAN)'), nets)
+    + sec(tr('Porty'), ports)
+    + sec(tr('Spoje ({n})', {n: adjMap()[d.id].length}), pwHtml() + (nb ? `<ul>${nb}</ul>` : `<p class="hint">${tr('Žádné. Shift+táhni na jiné zařízení.')}</p>`))
+    + `<div class="row"><button data-act="dup">${tr('Duplikovat')}</button><button data-act="del" class="danger">${tr('Smazat')}</button></div>`
+    + `<p class="hint">ID: ${d.id}${D.areas.length ? '' : '<br>' + tr('Prostory (dům, patra, místnosti) založíš v 🏠 Prostory, umístění pak vybereš z nabídky.')}</p>`;
 }
 function linkProps(l) {
   const a = byId(l.a), b = byId(l.b), pl = pairLs(l), [u1, u2] = upFirst(l);
   const par = pl.length > 1
-    ? `<p class="hint">Souběžné spoje mezi těmito zařízeními (${pl.length}):</p><div class="row">${pl.map(x => `<button data-sel="l:${x.id}"${x.id == l.id ? ' class="on"' : ''}>${esc(x['p' + u1] || '?')}↔${esc(x['p' + u2] || '?')}</button>`).join('')}</div>`
+    ? `<p class="hint">${tr('Souběžné spoje mezi těmito zařízeními ({n}):', {n: pl.length})}</p><div class="row">${pl.map(x => `<button data-sel="l:${x.id}"${x.id == l.id ? ' class="on"' : ''}>${esc(x['p' + u1] || '?')}↔${esc(x['p' + u2] || '?')}</button>`).join('')}</div>`
     : '';
   // napájení a bezdrát nemají porty (kromě už vyplněných)
   const sides = (isPw(l.t) || isWl(l.t)) && !l.pa && !l.pb ? [] : [u1, u2];
   const ports = sides.map(s => {
     const dv = s == 'a' ? a : b, k = 'p' + s;
-    return `<label>Port na „${esc(nm(dv))}“${portSel(dv, l, `data-f="${k}"`, l[k])}</label>`;
+    return `<label>${tr('Port na „{d}“', {d: esc(nm(dv))})}${portSel(dv, l, `data-f="${k}"`, l[k])}</label>`;
   }).join('');
-  return `<h3>Spoj</h3><p>${esc(nm(a))} ↔ ${esc(nm(b))}</p>${par}<label>Typ spoje<select data-f="t">${optionsHtml(L, l.t, v => v[0])}</select></label>`
+  return `<h3>${tr('Spoj')}</h3><p>${esc(nm(a))} ↔ ${esc(nm(b))}</p>${par}<label>${tr('Typ spoje')}<select data-f="t">${optionsHtml(L, l.t, v => v[0])}</select></label>`
     + ports + pwHtml()
     + (poeSet(a).has(l.pa) || poeSet(b).has(l.pb) || l.w ? field('w', l.w) : '')
     + (l.t == 'mesh' || l.band || l.rate ? field('band', l.band) + field('rate', l.rate) : '')
     + field('note', l.note)
     + `<div class="row"><button data-sel="d:${l.a}">← ${esc(nm(a))}</button><button data-sel="d:${l.b}">${esc(nm(b))} →</button></div>`
-    + `<div class="row"><button data-act="lpar" title="Další kabel mezi stejnými zařízeními (např. port 2 ↔ port 2)">+ souběžný spoj</button><button data-act="del" class="danger">Smazat spoj</button></div>`;
+    + `<div class="row"><button data-act="lpar" title="${tr('Další kabel mezi stejnými zařízeními (např. port 2 ↔ port 2)')}">+ ${tr('souběžný spoj')}</button><button data-act="del" class="danger">${tr('Smazat spoj')}</button></div>`;
 }
 // výběr umístění zařízení: strom prostorů (hodnota a:id, odsazení podle hloubky), nebo ručně psaný text
 function roomSel(d) {
   const cur = area(d.ar), pad = h => '\u00a0\u00a0\u00a0'.repeat(h);
   const opts = arTree().map(([a, h]) => `<option value="a:${a.id}"${a == cur ? ' selected' : ''}>${pad(h)}${AKI(a.k)} ${esc(a.n)}</option>`).join('');
   const own = !cur && d.room;
-  return `<label>${FL.room}<select data-f="room"><option value="">— žádné —</option>${opts}`
+  return `<label>${FL.room}<select data-f="room"><option value="">— ${tr('žádné')} —</option>${opts}`
     + `${own ? `<option value="${esc(d.room)}" selected>✎ ${esc(d.room)}</option>` : ''}`
-    + `<option value="\u0001">✎ Vlastní text…</option></select></label>`
+    + `<option value="\u0001">✎ ${tr('Vlastní text…')}</option></select></label>`
     + (cur ? `<p class="hint">${esc(aPath(cur))}</p>` : '');
 }
-const HELP_TOPO = `<h3>Topologie</h3><p class="hint">Klikni na zařízení nebo spoj.<br><br>• Zařízení přidáš kliknutím v levém panelu nebo přetažením na plochu.<br>• Spoj: Shift + táhni z jednoho zařízení na druhé (nebo zapni 🔗 Spojovat).<br>• Posun plochy: táhni prázdné místo.<br>• Typ spoje se odhadne, změníš ho po kliknutí na čáru.<br><br>Vyber složku 📁: ukládá se tam <b>network.json</b> (data), <b>layout.json</b> (rozložení) a <b>network.md</b> (čitelný přehled).</p>`;
+// nápověda v prázdném panelu (nic není vybrané)
+const helpTopo = () => `<h3>${tr('Topologie')}</h3><p class="hint">${tr('Klikni na zařízení nebo spoj.')}<br><br>`
+  + `• ${tr('Zařízení přidáš kliknutím v levém panelu nebo přetažením na plochu.')}<br>`
+  + `• ${tr('Spoj: Shift + táhni z jednoho zařízení na druhé (nebo zapni 🔗 Spojovat).')}<br>`
+  + `• ${tr('Posun plochy: táhni prázdné místo.')}<br>`
+  + `• ${tr('Typ spoje se odhadne, změníš ho po kliknutí na čáru.')}<br><br>`
+  + `${tr('Vyber složku 📁: ukládá se tam <b>network.json</b> (data), <b>layout.json</b> (rozložení) a <b>network.md</b> (čitelný přehled).')}</p>`;
 
 // export HTML jen na prohlížení: nápověda místo návodu k úpravám
 function helpView() {
-  const at = EMB?.at ? new Date(EMB.at).toLocaleString('cs', {dateStyle: 'medium', timeStyle: 'short'}) : '';
-  return `<h3>${esc(EMB?.name || 'Mapa sítě')}</h3><p class="hint">Jen na prohlížení${at ? `, export ${at}` : ''}.<br><br>`
-    + '• Klikni na zařízení nebo spoj, tady se ukážou jeho údaje.<br>• Posun: táhni prázdné místo, zoom kolečkem (na mobilu dvěma prsty), F = celá mapa.<br>'
-    + '• 👁 Zobrazení přepíná, co je vidět (vrstvy, sítě VLAN, prostory, popisky), 🏠 Prostory ukáže dům, patra a místnosti.<br>'
-    + '• ✎ Upravit mapu odemkne. Uložit ji pak jde do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML.</p>';
+  const at = EMB?.at ? new Date(EMB.at).toLocaleString(loc(), {dateStyle: 'medium', timeStyle: 'short'}) : '';
+  return `<h3>${esc(EMB?.name || tr('Mapa sítě'))}</h3><p class="hint">${tr('Jen na prohlížení')}${at ? ', ' + tr('export {t}', {t: at}) : ''}.<br><br>`
+    + `• ${tr('Klikni na zařízení nebo spoj, tady se ukážou jeho údaje.')}<br>`
+    + `• ${tr('Posun: táhni prázdné místo, zoom kolečkem (na mobilu dvěma prsty), F = celá mapa.')}<br>`
+    + `• ${tr('👁 Zobrazení přepíná, co je vidět (vrstvy, sítě VLAN, prostory, popisky), 🏠 Prostory ukáže dům, patra a místnosti.')}<br>`
+    + `• ${tr('✎ Upravit mapu odemkne. Uložit ji pak jde do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML.')}</p>`;
 }
 // jen prohlížení: pole v panelu a v okně firewallu jdou číst, ne měnit; zůstanou výběr (data-sel) a akce z RO_ACT
 const RO_ACT = ['fw', 'pvo'];
@@ -2492,7 +3206,7 @@ function onPropsInput(e) {
     } else {
       let nv = v;
       if (t.value == '\u0001') {
-        const r = prompt('Místnost / umístění (mimo prostory):', o.room || '');
+        const r = prompt(tr('Místnost / umístění (mimo prostory):'), o.room || '');
         if (r === null) { renderProps(); return; }
         nv = r.trim();
       }
@@ -2590,25 +3304,25 @@ function onPropsClick(e) {
 // Přesměrování {n, k, p, ep, di, dp, note, off}: k = 'UPnP' (otevřelo si ho zařízení samo), prázdné = ruční.
 
 const FW_P = ['TCP/UDP', 'TCP', 'UDP', 'ICMP'];
-const FW_A = ['Povolit', 'Zakázat'];
+const FW_A = [trK('Povolit'), trK('Zakázat')];  // ukládá se česky, zobrazení přes tr
 // sloupce tabulek: [vlastnost, nadpis, placeholder, šířka, volby (select), datalist]
 const FW_COLS = {
   rules: [
-    ['n', 'Název', '', '13%'], ['p', 'Protokol', 'vše', '88px', FW_P],
-    ['sn', 'Zdroj: síť', 'vše', '9%', 0, 'fwNets'], ['si', 'IP', 'vše', '12%', 0, 'fwIps'], ['sp', 'port', 'vše', '64px'],
-    ['dn', 'Cíl: síť', 'vše', '9%', 0, 'fwNets'], ['di', 'IP', 'vše', '12%', 0, 'fwIps'], ['dp', 'port', 'vše', '84px'],
-    ['a', 'Akce', '', '92px', FW_A], ['note', 'Účel / poznámka', '', 'auto'],
+    ['n', trK('Název'), '', '13%'], ['p', trK('Protokol'), trK('vše'), '88px', FW_P],
+    ['sn', trK('Zdroj: síť'), trK('vše'), '9%', 0, 'fwNets'], ['si', trK('IP'), trK('vše'), '12%', 0, 'fwIps'], ['sp', trK('port'), trK('vše'), '64px'],
+    ['dn', trK('Cíl: síť'), trK('vše'), '9%', 0, 'fwNets'], ['di', trK('IP'), trK('vše'), '12%', 0, 'fwIps'], ['dp', trK('port'), trK('vše'), '84px'],
+    ['a', trK('Akce'), '', '92px', FW_A], ['note', trK('Účel / poznámka'), '', 'auto'],
   ],
   fwd: [
-    ['n', 'Název', '', '16%'], ['k', 'Původ', 'ruční', '84px', ['UPnP']], ['p', 'Protokol', 'vše', '88px', FW_P],
-    ['ep', 'Vnější port', '', '90px'], ['di', 'Cílová IP', '', '13%', 0, 'fwIps'], ['dp', 'Cílový port', 'stejný', '90px'],
-    ['note', 'Poznámka', '', 'auto'],
+    ['n', trK('Název'), '', '16%'], ['k', trK('Původ'), trK('ruční'), '84px', ['UPnP']], ['p', trK('Protokol'), trK('vše'), '88px', FW_P],
+    ['ep', trK('Vnější port'), '', '90px'], ['di', trK('Cílová IP'), '', '13%', 0, 'fwIps'], ['dp', trK('Cílový port'), trK('stejný'), '90px'],
+    ['note', trK('Poznámka'), '', 'auto'],
   ],
 };
-const FW_TABS = {rules: 'Pravidla', fwd: 'Přesměrování portů / UPnP', note: 'Poznámky'};
+const FW_TABS = {rules: trK('Pravidla'), fwd: trK('Přesměrování portů / UPnP'), note: trK('Poznámky')};
 const FW_HINT = {
-  rules: 'Vyhodnocuje se shora dolů, první shoda vyhrává: výjimky (Povolit) patří nad plošné zákazy. Prázdné pole = vše. Víc sítí odděl čárkou. Sítě se nabízejí z VLAN routeru, IP ze zařízení v mapě.',
-  fwd: 'Porty otevřené z internetu dovnitř. UPnP si otevírají zařízení sama, ruční přesměrování nastavuješ v routeru.',
+  rules: trK('Vyhodnocuje se shora dolů, první shoda vyhrává: výjimky (Povolit) patří nad plošné zákazy. Prázdné pole = vše. Víc sítí odděl čárkou. Sítě se nabízejí z VLAN routeru, IP ze zařízení v mapě.'),
+  fwd: trK('Porty otevřené z internetu dovnitř. UPnP si otevírají zařízení sama, ruční přesměrování nastavuješ v routeru.'),
 };
 let fwTab = 'rules';
 
@@ -2633,21 +3347,21 @@ function fwChecks(k) {
   const known = fwNetsKnown(), ips = new Set(D.devices.map(d => d.ip).filter(Boolean)), list = fwRows(k);
   return list.map((r, j) => {
     const o = [];
-    for (const f of ['sn', 'dn']) for (const x of fwSet(r[f])) if (!known.has(x)) o.push(['w', `síť „${x}“ není mezi VLANy routeru`]);
-    for (const f of ['si', 'di']) if (isOneIp(r[f]) && !ips.has(r[f])) o.push(['i', `IP ${r[f]} nemá v mapě žádné zařízení`]);
+    for (const f of ['sn', 'dn']) for (const x of fwSet(r[f])) if (!known.has(x)) o.push(['w', tr('síť „{x}“ není mezi VLANy routeru', {x})]);
+    for (const f of ['si', 'di']) if (isOneIp(r[f]) && !ips.has(r[f])) o.push(['i', tr('IP {ip} nemá v mapě žádné zařízení', {ip: r[f]})]);
     if (r.off) return o;
     const before = list.slice(0, j).map((x, i) => [x, i]).filter(([x]) => !x.off);
     if (k == 'rules') {
       const c = before.find(([x]) => fwCovers(x, r));
       if (c) {
         const who = `#${c[1] + 1} „${c[0].n || ''}“`;
-        o.push(c[0].a == r.a ? ['i', `nadbytečné: stejnou akci už dělá ${who}`] : ['w', `nikdy se neuplatní: dřív ho zachytí ${who}`]);
+        o.push(c[0].a == r.a ? ['i', tr('nadbytečné: stejnou akci už dělá {w}', {w: who})] : ['w', tr('nikdy se neuplatní: dřív ho zachytí {w}', {w: who})]);
       }
     }
     if (k == 'fwd' && r.ep) {
       const pr = fwProtos(r.p);
       const c = before.find(([x]) => x.ep == r.ep && (!pr || !fwProtos(x.p) || fwProtos(x.p).some(p => pr.includes(p))));
-      if (c) o.push(['w', `vnější port ${r.ep} už přesměrovává #${c[1] + 1}`]);
+      if (c) o.push(['w', tr('vnější port {p} už přesměrovává #{n}', {p: r.ep, n: c[1] + 1})]);
     }
     return o;
   });
@@ -2657,7 +3371,7 @@ const fwWarn = c => c.length ? `<span class="${fwWorst(c)}" title="${esc(c.map(x
 // souhrn kontrol: „⚠ 2 upozornění · ⓘ 3 info“
 function fwSumHtml(ch) {
   const w = ch.filter(c => fwWorst(c) == 'w').length, i = ch.filter(c => fwWorst(c) == 'i').length;
-  return [w && `<span class="w">⚠ ${w} upozornění</span>`, i && `<span class="i">ⓘ ${i} info</span>`].filter(Boolean).join(' · ') || '✓ kontroly bez nálezu';
+  return [w && `<span class="w">⚠ ${tr('{n} upozornění', {n: w})}</span>`, i && `<span class="i">ⓘ ${tr('{n} info', {n: i})}</span>`].filter(Boolean).join(' · ') || '✓ ' + tr('kontroly bez nálezu');
 }
 
 // buňka tabulky: výběr ze seznamu (neznámou hodnotu ze souboru nezahodí), nebo text
@@ -2665,33 +3379,33 @@ function fwCell(k, i, r, [f, , ph, , opt, dl]) {
   const a = `data-fw="${k}" data-i="${i}" data-k="${f}"`, v = r[f] || '';
   if (opt) {
     const list = [...opt, ...(v && !opt.includes(v) ? [v] : [])];
-    return `<select ${a}${f == 'a' ? ` class="ac-${esc(v)}"` : ''}>${f == 'a' ? '' : `<option value="">${ph}</option>`}`
-      + list.map(o => `<option${o == v ? ' selected' : ''}>${esc(o)}</option>`).join('') + '</select>';
+    return `<select ${a}${f == 'a' ? ` class="ac-${esc(v)}"` : ''}>${f == 'a' ? '' : `<option value="">${tr(ph)}</option>`}`
+      + list.map(o => `<option value="${esc(o)}"${o == v ? ' selected' : ''}>${esc(f == 'a' ? tr(o) : o)}</option>`).join('') + '</select>';
   }
-  return `<input ${a} value="${esc(v)}" placeholder="${ph}"${dl ? ` list="${dl}"` : ''} title="${esc(v)}">`;
+  return `<input ${a} value="${esc(v)}" placeholder="${tr(ph)}"${dl ? ` list="${dl}"` : ''} title="${esc(v)}">`;
 }
 function fwTable(k) {
   const cols = FW_COLS[k], list = fwRows(k), ch = fwChecks(k), last = list.length - 1;
   const grp = f => f == 'sn' || f == 'dn' ? ' class="gs"' : '';
   const head = `<colgroup><col style="width:30px"><col style="width:26px">${cols.map(c => `<col style="width:${c[3]}">`).join('')}<col style="width:26px"><col style="width:84px"></colgroup>`
-    + `<tr><th>#</th><th title="Zapnuté">✓</th>${cols.map(c => `<th${grp(c[0])}>${c[1]}</th>`).join('')}<th></th><th></th></tr>`;
+    + `<tr><th>#</th><th title="${tr('Zapnuté')}">✓</th>${cols.map(c => `<th${grp(c[0])}>${tr(c[1])}</th>`).join('')}<th></th><th></th></tr>`;
   const rows = list.map((r, i) => `<tr${r.off ? ' class="off"' : ''}><td class="n">${i + 1}</td>`
-    + `<td><input type="checkbox" data-fw="${k}" data-i="${i}" data-k="on"${r.off ? '' : ' checked'} title="Zapnuté (odškrtnutím vypneš, pravidlo zůstane v tabulce)"></td>`
+    + `<td><input type="checkbox" data-fw="${k}" data-i="${i}" data-k="on"${r.off ? '' : ' checked'} title="${tr('Zapnuté (odškrtnutím vypneš, pravidlo zůstane v tabulce)')}"></td>`
     + cols.map(c => `<td${grp(c[0])}>${fwCell(k, i, r, c)}</td>`).join('')
     + `<td class="fwk" data-ck="${i}">${fwWarn(ch[i])}</td>`
-    + `<td class="fwa"><button data-fa="up" data-i="${i}" title="Výš (vyhodnotí se dřív)"${i ? '' : ' disabled'}>↑</button>`
-    + `<button data-fa="dn" data-i="${i}" title="Níž"${i < last ? '' : ' disabled'}>↓</button>`
-    + `<button data-fa="rm" data-i="${i}" class="danger" title="Smazat (Ctrl+Z vrátí)">×</button></td></tr>`).join('');
-  return `<p class="hint">${FW_HINT[k]} <span id="fwSum">${fwSumHtml(ch)}</span></p>`
+    + `<td class="fwa"><button data-fa="up" data-i="${i}" title="${tr('Výš (vyhodnotí se dřív)')}"${i ? '' : ' disabled'}>↑</button>`
+    + `<button data-fa="dn" data-i="${i}" title="${tr('Níž')}"${i < last ? '' : ' disabled'}>↓</button>`
+    + `<button data-fa="rm" data-i="${i}" class="danger" title="${tr('Smazat (Ctrl+Z vrátí)')}">×</button></td></tr>`).join('');
+  return `<p class="hint">${tr(FW_HINT[k])} <span id="fwSum">${fwSumHtml(ch)}</span></p>`
     + `<table class="fwt">${head}${rows}</table>`
-    + `<button data-fa="add" class="add">+ přidat ${k == 'rules' ? 'pravidlo' : 'přesměrování'}</button>`;
+    + `<button data-fa="add" class="add">+ ${k == 'rules' ? tr('přidat pravidlo') : tr('přidat přesměrování')}</button>`;
 }
 function fwRender() {
   const k = fwTab;
-  $('#fwTabs').innerHTML = Object.entries(FW_TABS).map(([t, n]) => `<button data-ft="${t}"${t == k ? ' class="on"' : ''}>${n}${t == 'note' ? '' : ` (${fwRows(t).length})`}</button>`).join('');
+  $('#fwTabs').innerHTML = Object.entries(FW_TABS).map(([t, n]) => `<button data-ft="${t}"${t == k ? ' class="on"' : ''}>${tr(n)}${t == 'note' ? '' : ` (${fwRows(t).length})`}</button>`).join('');
   $('#fwCsv').hidden = k == 'note';
   if (k == 'note') {
-    $('#fwB').innerHTML = `<p class="hint">Volné poznámky k firewallu: legenda sítí, důvody pravidel, co zvážit.</p><textarea data-fwnote placeholder="poznámky…">${esc(D.fw?.note)}</textarea>`;
+    $('#fwB').innerHTML = `<p class="hint">${tr('Volné poznámky k firewallu: legenda sítí, důvody pravidel, co zvážit.')}</p><textarea data-fwnote placeholder="${tr('poznámky…')}">${esc(D.fw?.note)}</textarea>`;
     roLock($('#fwB'));
     return;
   }
@@ -2753,10 +3467,10 @@ function fwCsv() {
   const k = fwTab, cols = FW_COLS[k];
   const q = v => /[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
   const rows = [
-    ['#', 'Zapnuto', ...cols.map(c => c[1] == 'IP' || c[1] == 'port' ? (c[0][0] == 's' ? 'Zdroj ' : 'Cíl ') + c[1] : c[1].replace(':', ''))],
-    ...fwRows(k).map((r, i) => [i + 1, r.off ? 'ne' : 'ano', ...cols.map(([f, , ph]) => r[f] || ph)]),
+    ['#', tr('Zapnuto'), ...cols.map(c => c[1] == 'IP' || c[1] == 'port' ? (c[0][0] == 's' ? tr('Zdroj {c}', {c: tr(c[1])}) : tr('Cíl {c}', {c: tr(c[1])})) : tr(c[1]).replace(':', ''))],
+    ...fwRows(k).map((r, i) => [i + 1, r.off ? tr('ne') : tr('ano'), ...cols.map(([f, , ph]) => (f == 'a' ? tr(r[f] || '') : r[f]) || tr(ph))]),
   ];
-  download(k == 'rules' ? 'firewall-pravidla.csv' : 'firewall-presmerovani.csv', '﻿' + rows.map(r => r.map(v => q(String(v))).join(';')).join('\r\n') + '\r\n');
+  download(k == 'rules' ? tr('firewall-pravidla.csv') : tr('firewall-presmerovani.csv'), '﻿' + rows.map(r => r.map(v => q(String(v))).join(';')).join('\r\n') + '\r\n');
 }
 
 // ---------- sken sítě: porovnání s mapou (jen na NAS, docs/nas.md) ----------
@@ -2766,7 +3480,7 @@ function fwCsv() {
 // proto se u ní rozdíl jen nabízí a nové zařízení se nepozná podle MAC.
 
 let scRes = null, scTab = 'new', scT;
-const SC_TABS = {new: 'Nové', chg: 'Změněné', miss: 'Chybějící', ok: 'V pořádku'};
+const SC_TABS = {new: trK('Nové'), chg: trK('Změněné'), miss: trK('Chybějící'), ok: trK('V pořádku')};
 // typ nového zařízení podle výrobce a jména z DNS: [výraz, typ]
 const SC_GUESS = [
   [/synology|qnap/i, 'nas'],
@@ -2820,10 +3534,10 @@ function scMatch() {
     let m = null, how = '';
     const find = (f, w) => { if (!m) { m = ds.find(f); how = w; } };
     if (mac) find(([, a]) => a.mac == mac, 'MAC');
-    if (mac) find(([, a]) => a.macs.includes(mac), 'MAC 2. rozhraní');
+    if (mac) find(([, a]) => a.macs.includes(mac), trK('MAC 2. rozhraní'));
     find(([, a]) => a.ip == h.ip, 'IP');
-    find(([, a]) => a.ips.includes(h.ip), 'IP 2. rozhraní');
-    if (key.length > 3) find(([, a]) => a.names.includes(key), 'jméno');
+    find(([, a]) => a.ips.includes(h.ip), trK('IP 2. rozhraní'));
+    if (key.length > 3) find(([, a]) => a.names.includes(key), trK('jméno'));
     if (!m) { out.new.push({h}); continue; }
     const [d, a] = m;
     seen.add(d.id);
@@ -2841,49 +3555,49 @@ function scMatch() {
   out.miss.sort((x, y) => ipNum(x.d.ip) - ipNum(y.d.ip));
   return out;
 }
-const scDev = d => `<a href="#" data-sd="${esc(d.id)}" title="Ukázat na mapě">${esc(nm(d))}</a>`;
-const scMac = m => m ? `<code>${esc(m)}</code>${macRnd(macN(m)) ? ' <span class="mu" title="Soukromá (náhodná) adresa Wi-Fi, může se měnit">náhodná</span>' : ''}` : '<span class="mu">–</span>';
+const scDev = d => `<a href="#" data-sd="${esc(d.id)}" title="${tr('Ukázat na mapě')}">${esc(nm(d))}</a>`;
+const scMac = m => m ? `<code>${esc(m)}</code>${macRnd(macN(m)) ? ` <span class="mu" title="${tr('Soukromá (náhodná) adresa Wi-Fi, může se měnit')}">${tr('náhodná')}</span>` : ''}` : '<span class="mu">–</span>';
 function scTable(k, rows) {
-  if (!rows.length) return '<p class="hint">Nic.</p>';
-  const head = cs => `<table class="fwt sct"><tr>${cs.map(c => `<th>${c}</th>`).join('')}</tr>`;
+  if (!rows.length) return `<p class="hint">${tr('Nic.')}</p>`;
+  const head = cs => `<table class="fwt sct"><tr>${cs.map(c => `<th>${tr(c)}</th>`).join('')}</tr>`;
   if (k == 'new') {
     const types = t => Object.entries(T).map(([v, [n, e]]) => `<option value="${v}"${v == t ? ' selected' : ''}>${e} ${n}</option>`).join('');
-    return '<p class="hint">V síti, ale ne v mapě. Typ je odhad podle výrobce a jména, před přidáním ho můžeš změnit.</p>'
-      + head(['IP', 'MAC', 'Výrobce', 'Jméno (DNS)', 'Typ', ''])
+    return `<p class="hint">${tr('V síti, ale ne v mapě. Typ je odhad podle výrobce a jména, před přidáním ho můžeš změnit.')}</p>`
+      + head([trK('IP'), trK('MAC'), trK('Výrobce'), trK('Jméno (DNS)'), trK('Typ'), ''])
       + rows.map(({h}, i) => `<tr><td><code>${esc(h.ip)}</code></td><td>${scMac(h.mac)}</td><td>${esc(h.vendor)}</td><td>${esc(h.name)}</td>`
-        + `<td><select>${types(scGuess(h))}</select></td><td class="act"><button data-sa="add" data-i="${i}">＋ Přidat do mapy</button></td></tr>`).join('') + '</table>';
+        + `<td><select>${types(scGuess(h))}</select></td><td class="act"><button data-sa="add" data-i="${i}">＋ ${tr('Přidat do mapy')}</button></td></tr>`).join('') + '</table>';
   }
   if (k == 'chg') {
     const dfs = df => df.map(x => `${x.k.toUpperCase()}: <code>${esc(x.old) || '–'}</code> → <code class="df">${esc(x.v)}</code>`).join('<br>');
-    return `<p class="hint">Stejná MAC a jiná IP, nebo stejná IP a jiná MAC. „Převzít“ zapíše hodnotu ze sítě do mapy. <button data-sa="all">Převzít vše</button></p>`
-      + head(['Zařízení', 'Spárováno podle', 'Rozdíl', 'Výrobce / jméno', ''])
-      + rows.map(({h, d, how, df}, i) => `<tr><td>${scDev(d)}</td><td class="mu">${how}</td><td>${dfs(df)}</td><td class="mu">${esc([h.vendor, h.name].filter(Boolean).join(' · '))}</td>`
-        + `<td class="act"><button data-sa="take" data-i="${i}">Převzít</button></td></tr>`).join('') + '</table>';
+    return `<p class="hint">${tr('Stejná MAC a jiná IP, nebo stejná IP a jiná MAC. „Převzít“ zapíše hodnotu ze sítě do mapy.')} <button data-sa="all">${tr('Převzít vše')}</button></p>`
+      + head([trK('Zařízení'), trK('Spárováno podle'), trK('Rozdíl'), trK('Výrobce / jméno'), ''])
+      + rows.map(({h, d, how, df}, i) => `<tr><td>${scDev(d)}</td><td class="mu">${tr(how)}</td><td>${dfs(df)}</td><td class="mu">${esc([h.vendor, h.name].filter(Boolean).join(' · '))}</td>`
+        + `<td class="act"><button data-sa="take" data-i="${i}">${tr('Převzít')}</button></td></tr>`).join('') + '</table>';
   }
   if (k == 'miss') {
-    return '<p class="hint">V mapě mají IP ze skenované sítě, ale sken je nenašel. Mohou být jen vypnutá nebo spát (telefony, IoT).</p>'
-      + head(['Zařízení', 'Typ', 'IP', 'MAC'])
+    return `<p class="hint">${tr('V mapě mají IP ze skenované sítě, ale sken je nenašel. Mohou být jen vypnutá nebo spát (telefony, IoT).')}</p>`
+      + head([trK('Zařízení'), trK('Typ'), trK('IP'), trK('MAC')])
       + rows.map(({d}) => `<tr><td>${scDev(d)}</td><td class="mu">${T[d.t]?.[0] || d.t}</td><td><code>${esc(d.ip)}</code></td><td>${scMac(d.mac)}</td></tr>`).join('') + '</table>';
   }
-  return head(['Zařízení', 'IP', 'MAC', 'Spárováno podle', 'Výrobce / jméno'])
-    + rows.map(({h, d, how}) => `<tr><td>${scDev(d)}</td><td><code>${esc(h.ip)}</code></td><td>${scMac(h.mac)}</td><td class="mu">${how}</td><td class="mu">${esc([h.vendor, h.name].filter(Boolean).join(' · '))}</td></tr>`).join('') + '</table>';
+  return head([trK('Zařízení'), trK('IP'), trK('MAC'), trK('Spárováno podle'), trK('Výrobce / jméno')])
+    + rows.map(({h, d, how}) => `<tr><td>${scDev(d)}</td><td><code>${esc(h.ip)}</code></td><td>${scMac(h.mac)}</td><td class="mu">${tr(how)}</td><td class="mu">${esc([h.vendor, h.name].filter(Boolean).join(' · '))}</td></tr>`).join('') + '</table>';
 }
 function scInfo() {
   const r = scRes, nets = esc((r?.nets || []).join(', ') || '?');
-  const t = s => new Date(s).toLocaleString('cs', {dateStyle: 'short', timeStyle: 'short'});
-  if (!r) return 'Načítám…';
+  const t = s => new Date(s).toLocaleString(loc(), {dateStyle: 'short', timeStyle: 'short'});
+  if (!r) return tr('Načítám…');
   if (r.fail) return '⚠ ' + esc(r.fail);
-  if (r.state == 'running') return `⏳ NAS skenuje ${nets} (od ${t(r.since)}), trvá to asi půl minuty…`;
-  if (!r.at) return `Zatím žádný sken. Spustí ho ▶ Skenovat (NAS proskenuje ${nets}).`;
-  return `Sken ${t(r.at)} · ${nets} · nalezeno ${r.hosts.length} zařízení za ${num(r.secs) || 0} s`
+  if (r.state == 'running') return '⏳ ' + tr('NAS skenuje {n} (od {t}), trvá to asi půl minuty…', {n: nets, t: t(r.since)});
+  if (!r.at) return tr('Zatím žádný sken. Spustí ho ▶ Skenovat (NAS proskenuje {n}).', {n: nets});
+  return tr('Sken {t} · {n} · nalezeno {c} zařízení za {s} s', {t: t(r.at), n: nets, c: r.hosts.length, s: num(r.secs) || 0})
     + (r.error ? ` · <b class="ov">⚠ ${esc(r.error)}</b>` : '')
-    + '<br>Ostatní VLANy NAS nevidí, jejich zařízení se neporovnávají.';
+    + '<br>' + tr('Ostatní VLANy NAS nevidí, jejich zařízení se neporovnávají.');
 }
 function scRender() {
   const r = scMatch(), run = scRes?.state == 'running';
-  $('#scTabs').innerHTML = Object.entries(SC_TABS).map(([k, n]) => `<button data-st="${k}"${k == scTab ? ' class="on"' : ''}>${n} (${r[k].length})</button>`).join('');
+  $('#scTabs').innerHTML = Object.entries(SC_TABS).map(([k, n]) => `<button data-st="${k}"${k == scTab ? ' class="on"' : ''}>${tr(n)} (${r[k].length})</button>`).join('');
   $('#scGo').disabled = run;
-  $('#scGo').textContent = run ? '⏳ Skenuje se…' : '▶ Skenovat';
+  $('#scGo').textContent = run ? '⏳ ' + tr('Skenuje se…') : '▶ ' + tr('Skenovat');
   $('#scB').innerHTML = `<p class="hint">${scInfo()}</p>` + (scRes?.at ? scTable(scTab, r[scTab]) : '');
 }
 // GET/POST api/scan; během skenu se ptá každé 2 s
@@ -2895,7 +3609,7 @@ async function scFetch(method) {
     if (!r.ok && r.status != 409) throw new Error('server ' + r.status);
     scRes = await r.json();
   } catch (e) {
-    scRes = {fail: 'sken nejde načíst: ' + e.message};
+    scRes = {fail: tr('sken nejde načíst: {e}', {e: e.message})};
   }
   if (scRes.state == 'running' && $('#scDlg').open) scT = setTimeout(() => scFetch('GET'), 2000);
   if (scRes.state == 'idle' && scRes.at && method == 'GET' && scTab == 'new' && !scMatch().new.length) scTab = 'chg';
@@ -2912,7 +3626,7 @@ const scGo = () => scFetch('POST');
 function scAdd(h, t) {
   const d = {id: freeDevId(t), t, n: h.name?.split('.')[0] || h.vendor || h.ip, ip: h.ip};
   if (macN(h.mac)) d.mac = macN(h.mac);
-  if (h.vendor) d.note = 'výrobce (sken): ' + h.vendor;
+  if (h.vendor) d.note = tr('výrobce (sken): {v}', {v: h.vendor});
   D.devices.push(d);
   fixPos();
 }
@@ -2949,29 +3663,29 @@ let bkList = null, bkSel = null, bkErr = '';  // seznam záloh [{id, at, size}],
 const bkData = {};                            // načtené zálohy {net, lay} podle id
 // popisky polí, které FL nemá (nebo je má moc dlouhé)
 const BK_F = {
-  n: 'název', t: 'typ', ic: 'ikona', img: 'obrázek', note: 'poznámka', pg: 'porty', pp: 'porty', pvl: 'VLANy na portech',
-  a: 'konec', b: 'konec', pa: 'port', pb: 'port', ar: 'prostor', par: 'umístění',
-  k: 'druh', fc: 'barva patra',
+  n: trK('název'), t: trK('typ'), ic: trK('ikona'), img: trK('obrázek'), note: trK('poznámka'), pg: trK('porty'), pp: trK('porty'), pvl: trK('VLANy na portech'),
+  a: trK('konec'), b: trK('konec'), pa: trK('port'), pb: trK('port'), ar: trK('prostor'), par: trK('umístění'),
+  k: trK('druh'), fc: trK('barva patra'),
 };
-const bkFld = (k, kind) => kind == 'lnk' && k == 'w' ? 'odběr PoE' : BK_F[k] || FL[k]?.split(/ [(/]/)[0].toLowerCase() || k;
+const bkFld = (k, kind) => kind == 'lnk' && k == 'w' ? tr('odběr PoE') : BK_F[k] ? tr(BK_F[k]) : FL[k]?.split(/ [(/]/)[0].toLowerCase() || k;
 // GET/POST api/…; 404 = null, 401 = přihlášení vypršelo
 async function bkApi(path, method = 'GET') {
   const r = await fetch(store.base + path, {method, cache: 'no-store'});
   if (r.status == 401) {
     location.reload();
-    throw new Error('přihlášení vypršelo');
+    throw new Error(tr('přihlášení vypršelo'));
   }
   if (r.status == 404) return null;
   if (!r.ok) throw new Error('server ' + r.status);
   return r.json();
 }
-const bkTime = s => new Date(s).toLocaleString('cs', {dateStyle: 'medium', timeStyle: 'short'});
+const bkTime = s => new Date(s).toLocaleString(loc(), {dateStyle: 'medium', timeStyle: 'short'});
 function bkAgo(s) {
   const m = Math.round((Date.now() - new Date(s)) / 60000);
-  if (m < 1) return 'právě teď';
-  if (m < 60) return `před ${m} min`;
-  if (m < 48 * 60) return `před ${Math.round(m / 60)} h`;
-  return `před ${Math.round(m / 1440)} dny`;
+  if (m < 1) return tr('právě teď');
+  if (m < 60) return tr('před {n} min', {n: m});
+  if (m < 48 * 60) return tr('před {n} h', {n: Math.round(m / 60)});
+  return tr('před {n} dny', {n: Math.round(m / 1440)});
 }
 // texty {net, lay} → seznamy pro porovnání (i starý layout {pos, view})
 function bkParse(f) {
@@ -3008,68 +3722,66 @@ function bkDiff(f) {
     lnk: l => `${nm(devs[l.a])} ↔ ${nm(devs[l.b])}${l.t ? ` <span class="mu">(${esc(lType(l.t)[0])})</span>` : ''}`,
     area: a => esc(a.n || a.id),
   };
-  const heads = {dev: 'Zařízení', lnk: 'Spoje', area: 'Prostory'};
+  const heads = {dev: tr('Zařízení'), lnk: tr('Spoje'), area: tr('Prostory')};
   let h = '', n = 0;
   for (const k of ['dev', 'lnk', 'area']) {
     const r = bkCmp(c[k], b[k], k), li = [];
     const nam = x => k == 'lnk' ? names.lnk(x) : esc(names[k](x));
-    r.back.forEach(x => li.push(`<li class="add">＋ ${nam(x)} <span class="mu">– obnova vrátí (teď v mapě není)</span></li>`));
-    r.now.forEach(x => li.push(`<li class="del">− ${nam(x)} <span class="mu">– obnova smaže (v záloze ještě nebylo)</span></li>`));
+    r.back.forEach(x => li.push(`<li class="add">＋ ${nam(x)} <span class="mu">– ${tr('obnova vrátí (teď v mapě není)')}</span></li>`));
+    r.now.forEach(x => li.push(`<li class="del">− ${nam(x)} <span class="mu">– ${tr('obnova smaže (v záloze ještě nebylo)')}</span></li>`));
     r.chg.forEach(({x, old, f}) => {
-      const was = k != 'lnk' && x.n != old.n ? ` (v záloze „${esc(old.n || old.id)}“)` : '';
-      li.push(`<li class="chg">✎ ${nam(x)}${was} <span class="mu">– jiné: ${esc(f.join(', '))}</span></li>`);
+      const was = k != 'lnk' && x.n != old.n ? ' ' + tr('(v záloze „{n}“)', {n: esc(old.n || old.id)}) : '';
+      li.push(`<li class="chg">✎ ${nam(x)}${was} <span class="mu">– ${tr('jiné: {f}', {f: esc(f.join(', '))})}</span></li>`);
     });
     n += li.length;
     if (li.length) h += `<h4>${heads[k]} (${li.length})</h4><ul>${li.join('')}</ul>`;
   }
   const other = [];
   const moved = Object.keys(b.pos).filter(id => c.pos[id] && !jEq(b.pos[id], c.pos[id])).length;
-  if (moved) other.push(`${moved}× jiná pozice zařízení`);
-  if (!jEq(b.wires, c.wires)) other.push('jiné ruční polohy čar schématu');
+  if (moved) other.push(tr('{n}× jiná pozice zařízení', {n: moved}));
+  if (!jEq(b.wires, c.wires)) other.push(tr('jiné ruční polohy čar schématu'));
   if (!jEq(b.fw, c.fw)) {
-    const cnt = x => `${x.rules?.length || 0} pravidel, ${x.fwd?.length || 0} přesměrování`;
-    other.push(`firewall: teď ${cnt(c.fw)}, v záloze ${cnt(b.fw)}`);
+    const cnt = x => tr('{r} pravidel, {f} přesměrování', {r: x.rules?.length || 0, f: x.fwd?.length || 0});
+    other.push(tr('firewall: teď {a}, v záloze {b}', {a: cnt(c.fw), b: cnt(b.fw)}));
   }
   n += other.length;
-  if (other.length) h += `<h4>Ostatní</h4><ul>${other.map(s => `<li class="chg">✎ ${esc(s)}</li>`).join('')}</ul>`;
-  return n ? h : '<p>Záloha je stejná jako současná verze, obnova by nic nezměnila.</p>';
+  if (other.length) h += `<h4>${tr('Ostatní')}</h4><ul>${other.map(s => `<li class="chg">✎ ${esc(s)}</li>`).join('')}</ul>`;
+  return n ? h : `<p>${tr('Záloha je stejná jako současná verze, obnova by nic nezměnila.')}</p>`;
 }
 function bkRender() {
   const el = $('#bkL'), dt = $('#bkD');
   if (!bkList) {
-    el.innerHTML = `<p class="hint">${bkErr ? '⚠ ' + esc(bkErr) : 'Načítám…'}</p>`;
+    el.innerHTML = `<p class="hint">${bkErr ? '⚠ ' + esc(bkErr) : tr('Načítám…')}</p>`;
     dt.innerHTML = '';
     return;
   }
   let day = '';
   el.innerHTML = bkList.length ? bkList.map(b => {
-    const d = new Date(b.at).toLocaleDateString('cs', {weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric'});
-    const t = new Date(b.at).toLocaleTimeString('cs', {timeStyle: 'medium'});
+    const d = new Date(b.at).toLocaleDateString(loc(), {weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric'});
+    const t = new Date(b.at).toLocaleTimeString(loc(), {timeStyle: 'medium'});
     const hd = d != day ? `<h4>${esc(d)}</h4>` : '';
     day = d;
     return hd + `<button data-bk="${esc(b.id)}"${b.id == bkSel ? ' class="on"' : ''}><span>${t}</span><span class="mu">${Math.max(1, Math.round(b.size / 1024))} kB</span></button>`;
-  }).join('') : '<p class="hint">Zatím žádná záloha. Server ji udělá při první změně po aspoň 30 minutách bez úprav.</p>';
+  }).join('') : `<p class="hint">${tr('Zatím žádná záloha. Server ji udělá při první změně po aspoň 30 minutách bez úprav.')}</p>`;
   const b = bkList.find(x => x.id == bkSel);
   if (!b) {
-    dt.innerHTML = `<p class="hint">${bkErr ? '⚠ ' + esc(bkErr) + '<br>' : ''}Vyber vlevo zálohu, ukáže se, co by obnova změnila proti současné mapě.<br>`
-      + 'Záloha s časem X je stav dat před úpravami, které v tomto čase začaly. Server zálohuje jen při první změně '
-      + 'po aspoň 30 minutách bez úprav (jedny úpravy = jedna záloha) a nechává 4 nejnovější zálohy.</p>';
+    dt.innerHTML = `<p class="hint">${bkErr ? '⚠ ' + esc(bkErr) + '<br>' : ''}${tr('Vyber vlevo zálohu, ukáže se, co by obnova změnila proti současné mapě.')}<br>`
+      + tr('Záloha s časem X je stav dat před úpravami, které v tomto čase začaly. Server zálohuje jen při první změně po aspoň 30 minutách bez úprav (jedny úpravy = jedna záloha) a nechává 4 nejnovější zálohy.') + '</p>';
     return;
   }
   const f = bkData[b.id];
-  const head = `<h3>Stav před ${esc(bkTime(b.at))} <span class="mu">(${bkAgo(b.at)})</span></h3>`;
+  const head = `<h3>${tr('Stav před {t}', {t: esc(bkTime(b.at))})} <span class="mu">(${bkAgo(b.at)})</span></h3>`;
   if (!f) {
-    dt.innerHTML = head + `<p class="hint">${bkErr ? '⚠ ' + esc(bkErr) : 'Načítám…'}</p>`;
+    dt.innerHTML = head + `<p class="hint">${bkErr ? '⚠ ' + esc(bkErr) : tr('Načítám…')}</p>`;
     return;
   }
   const busy = store?.conflict;
   dt.innerHTML = head
-    + `<p><button data-ba="restore"${busy ? ' disabled title="Nejdřív vyřeš rozpor s NAS ve stavovém řádku"' : ''}>↩ Obnovit tuto verzi</button> `
-    + '<button data-ba="dl" title="Stáhne network.json a layout.json této zálohy">⬇ Stáhnout soubory</button> '
-    + '<button data-ba="del" class="bkDel" title="Smaže tuto zálohu z NAS (nejde vrátit)">🗑 Smazat zálohu</button></p>'
+    + `<p><button data-ba="restore"${busy ? ` disabled title="${tr('Nejdřív vyřeš rozpor s NAS ve stavovém řádku')}"` : ''}>↩ ${tr('Obnovit tuto verzi')}</button> `
+    + `<button data-ba="dl" title="${tr('Stáhne network.json a layout.json této zálohy')}">⬇ ${tr('Stáhnout soubory')}</button> `
+    + `<button data-ba="del" class="bkDel" title="${tr('Smaže tuto zálohu z NAS (nejde vrátit)')}">🗑 ${tr('Smazat zálohu')}</button></p>`
     + (bkErr ? `<p class="ov">⚠ ${esc(bkErr)}</p>` : '')
-    + '<p class="hint">Obnova přepíše mapu touto verzí a uloží ji jako novou. Současná verze se předtím zazálohuje '
-    + 'a obnovu jde hned vrátit Ctrl+Z. Pohled (posun, přiblížení) zůstane.</p>'
+    + '<p class="hint">' + tr('Obnova přepíše mapu touto verzí a uloží ji jako novou. Současná verze se předtím zazálohuje a obnovu jde hned vrátit Ctrl+Z. Pohled (posun, přiblížení) zůstane.') + '</p>'
     + bkDiff(f);
 }
 async function bkLoad() {
@@ -3077,7 +3789,7 @@ async function bkLoad() {
   try {
     bkList = await bkApi('backups') || [];
   } catch (e) {
-    bkErr = 'seznam záloh nejde načíst: ' + e.message;
+    bkErr = tr('seznam záloh nejde načíst: {e}', {e: e.message});
   }
   bkRender();
 }
@@ -3088,10 +3800,10 @@ async function bkPick(id) {
   if (bkData[id]) return;
   try {
     const f = await bkApi('backups/' + encodeURIComponent(id));
-    if (!f?.net) throw new Error('záloha nemá network.json');
+    if (!f?.net) throw new Error(tr('záloha nemá network.json'));
     bkData[id] = f;
   } catch (e) {
-    bkErr = 'zálohu nejde načíst: ' + e.message;
+    bkErr = tr('zálohu nejde načíst: {e}', {e: e.message});
   }
   if (bkSel == id) bkRender();
 }
@@ -3106,15 +3818,15 @@ function bkOpen() {
 async function bkRestore() {
   const b = bkList.find(x => x.id == bkSel), f = bkData[bkSel];
   if (!b || !f || store?.conflict) return;
-  if (!confirm(`Obnovit mapu do stavu před ${bkTime(b.at)}?\n\nSoučasná verze se předtím uloží jako záloha a obnovu jde vrátit Ctrl+Z.`)) return;
+  if (!confirm(tr('Obnovit mapu do stavu před {t}?', {t: bkTime(b.at)}) + '\n\n' + tr('Současná verze se předtím uloží jako záloha a obnovu jde vrátit Ctrl+Z.'))) return;
   bkErr = '';
   try {
     save();
     await chain;
-    if (store?.conflict) throw new Error('na NAS je novější verze, nejdřív vyřeš rozpor ve stavovém řádku');
+    if (store?.conflict) throw new Error(tr('na NAS je novější verze, nejdřív vyřeš rozpor ve stavovém řádku'));
     await bkApi('backups', 'POST');
   } catch (e) {
-    bkErr = 'obnova neproběhla: ' + e.message;
+    bkErr = tr('obnova neproběhla: {e}', {e: e.message});
     return bkRender();
   }
   const u = undo, cur = JSON.stringify([D, PT, WT]);
@@ -3123,7 +3835,7 @@ async function bkRestore() {
   changed(1);
   save();
   await chain;
-  saved += ` · obnovena záloha z ${bkTime(b.at)}`;
+  saved += ' · ' + tr('obnovena záloha z {t}', {t: bkTime(b.at)});
   showStatus();
   bkSel = null;
   await bkLoad();
@@ -3132,7 +3844,7 @@ async function bkRestore() {
 async function bkDelete() {
   const b = bkList.find(x => x.id == bkSel);
   if (!b) return;
-  if (!confirm(`Smazat zálohu z ${bkTime(b.at)}?\n\nZáloha se smaže z NAS natrvalo a nepůjde obnovit.`)) return;
+  if (!confirm(tr('Smazat zálohu z {t}?', {t: bkTime(b.at)}) + '\n\n' + tr('Záloha se smaže z NAS natrvalo a nepůjde obnovit.'))) return;
   bkErr = '';
   try {
     const r = await fetch(store.base + 'backups/' + encodeURIComponent(b.id), {method: 'DELETE', cache: 'no-store'});
@@ -3142,12 +3854,12 @@ async function bkDelete() {
     }
     if (!r.ok && r.status != 404) throw new Error('server ' + r.status);
   } catch (e) {
-    bkErr = 'zálohu nejde smazat: ' + e.message;
+    bkErr = tr('zálohu nejde smazat: {e}', {e: e.message});
     return bkRender();
   }
   delete bkData[b.id];
   bkSel = null;
-  saved += ` · smazána záloha z ${bkTime(b.at)}`;
+  saved += ' · ' + tr('smazána záloha z {t}', {t: bkTime(b.at)});
   showStatus();
   await bkLoad();
 }
@@ -3158,8 +3870,8 @@ function onBkClick(e) {
   if (a == 'del') return bkDelete();
   if (a == 'dl') {
     const f = bkData[bkSel];
-    download(`zaloha-${bkSel}-network.json`, f.net);
-    if (f.lay) download(`zaloha-${bkSel}-layout.json`, f.lay);
+    download(tr('zaloha-{id}-network.json', {id: bkSel}), f.net);
+    if (f.lay) download(tr('zaloha-{id}-layout.json', {id: bkSel}), f.lay);
   }
 }
 
@@ -3261,19 +3973,19 @@ function arRender() {
   const rows = arTree().map(([a, h]) => {
     const sib = arKids(a.par), i = sib.indexOf(a), nd = arDevs(a).length, nt = arDevs(a, 1).length;
     const tip = arDevs(a).map(nm).join(', ');
-    const color = a.k == 'flr' ? `<input type="color" data-afc value="${flC(a.n)}" title="Barva patra „${esc(a.n)}“">` : '<span></span>';
+    const color = a.k == 'flr' ? `<input type="color" data-afc value="${flC(a.n)}" title="${tr('Barva patra „{n}“', {n: esc(a.n)})}">` : '<span></span>';
     const b = (act, t, title, off) => `<button class="mini" data-aa="${act}" title="${title}"${off ? ' disabled' : ''}>${t}</button>`;
     return `<div class="arr" data-a="${a.id}" style="--h:${h}">`
-      + `<select data-af="k" title="Druh prostoru">${optionsHtml(AK, a.k || 'room', v => v[0] + ' ' + v[1])}</select>`
-      + `<input data-af="n" value="${esc(a.n)}" placeholder="název" autocomplete="off">${color}`
-      + `<span class="arc" title="${esc(tip ? 'Přímo tady: ' + tip : 'Přímo tady žádné zařízení')}">${nd}${nt > nd ? ` <span class="mu">(${nt})</span>` : ''}</span>`
-      + `<span class="fwa">${b('add', '＋', 'Přidat prostor dovnitř')}${b('up', '↑', 'Posunout výš', !i)}${b('down', '↓', 'Posunout níž', i == sib.length - 1)}`
-      + `${b('out', '←', 'O úroveň výš (za nadřazený prostor)', !a.par)}${b('in', '→', 'Dovnitř prostoru nad ním', !i)}`
-      + `${b('dup', '⧉', 'Kopie i s prostory uvnitř, bez zařízení (patro dostane další číslo)')}${b('del', '×', 'Smazat (prostory a zařízení uvnitř přejdou o úroveň výš)')}</span></div>`;
+      + `<select data-af="k" title="${tr('Druh prostoru')}">${optionsHtml(AK, a.k || 'room', v => v[0] + ' ' + v[1])}</select>`
+      + `<input data-af="n" value="${esc(a.n)}" placeholder="${tr('název')}" autocomplete="off">${color}`
+      + `<span class="arc" title="${esc(tip ? tr('Přímo tady: {d}', {d: tip}) : tr('Přímo tady žádné zařízení'))}">${nd}${nt > nd ? ` <span class="mu">(${nt})</span>` : ''}</span>`
+      + `<span class="fwa">${b('add', '＋', tr('Přidat prostor dovnitř'))}${b('up', '↑', tr('Posunout výš'), !i)}${b('down', '↓', tr('Posunout níž'), i == sib.length - 1)}`
+      + `${b('out', '←', tr('O úroveň výš (za nadřazený prostor)'), !a.par)}${b('in', '→', tr('Dovnitř prostoru nad ním'), !i)}`
+      + `${b('dup', '⧉', tr('Kopie i s prostory uvnitř, bez zařízení (patro dostane další číslo)'))}${b('del', '×', tr('Smazat (prostory a zařízení uvnitř přejdou o úroveň výš)'))}</span></div>`;
   }).join('');
   $('#arB').innerHTML = rows
-    ? `<div class="arr arh"><span>Druh</span><span>Název</span><span></span><span title="Zařízení přímo v prostoru (v závorce i v prostorech uvnitř)">Zařízení</span><span></span></div>${rows}`
-    : '<p class="hint">Zatím žádné prostory. ＋ Prostor přidá první, třeba „Dům“; do něj patra (Přízemí, 1. patro) a do nich místnosti. Zařízení pak dostane prostor v panelu vlastností.</p>';
+    ? `<div class="arr arh"><span>${tr('Druh')}</span><span>${tr('Název')}</span><span></span><span title="${tr('Zařízení přímo v prostoru (v závorce i v prostorech uvnitř)')}">${tr('Zařízení')}</span><span></span></div>${rows}`
+    : `<p class="hint">${tr('Zatím žádné prostory. ＋ Prostor přidá první, třeba „Dům“; do něj patra (Přízemí, 1. patro) a do nich místnosti. Zařízení pak dostane prostor v panelu vlastností.')}</p>`;
   roLock($('#arDlg'));
 }
 // nový prostor pod rodičem pid (bez pid nahoře), fokus do názvu
@@ -3281,7 +3993,7 @@ function arAdd(pid) {
   snap();
   const p = area(pid);
   const k = !p ? 'bld' : p.k == 'bld' ? 'flr' : 'room';
-  const a = {id: nextId(D.areas, 'a'), n: k == 'flr' ? 'Přízemí' : k == 'bld' ? 'Dům' : 'Místnost', k, ...(pid ? {par: pid} : {})};
+  const a = {id: nextId(D.areas, 'a'), n: k == 'flr' ? tr('Přízemí') : k == 'bld' ? tr('Dům') : tr('Místnost'), k, ...(pid ? {par: pid} : {})};
   const last = D.areas.findLastIndex(x => arIn(x, p));
   D.areas.splice(last < 0 ? D.areas.length : last + 1, 0, a);
   changed(1);
@@ -3299,8 +4011,9 @@ function arPlace(a, b, after) {
 function arDup(a) {
   snap();
   const fs = flrs();
-  let n = a.k == 'flr' && /\d/.test(a.n) ? a.n.replace(/-?\d+/, m => +m + 1) : a.n + ' (kopie)';
-  while (a.k == 'flr' && fs.includes(n)) n += ' (kopie)';
+  const cp = n => tr('{n} (kopie)', {n});
+  let n = a.k == 'flr' && /\d/.test(a.n) ? a.n.replace(/-?\d+/, m => +m + 1) : cp(a.n);
+  while (a.k == 'flr' && fs.includes(n)) n = cp(n);
   const map = {}, copy = [];
   for (const [x] of arTree()) {
     if (!arIn(x, a)) continue;
@@ -3369,7 +4082,7 @@ function onArInput(e) {
 function onArChange(e) {
   const t = e.target, a = area(t.closest('[data-a]')?.dataset.a);
   if (a && t.dataset.af == 'n' && !a.n.trim()) {
-    a.n = AK[a.k]?.[1].split(' ')[0] || 'Prostor';
+    a.n = AK[a.k]?.[1].split(' ')[0] || tr('Prostor');
     t.value = a.n;
     changed(1);
   }
@@ -3444,7 +4157,7 @@ function addLink(a, b) {
       lyEnsure('wifi');
       sel = {k: 'd', id: c.id};
       changed(1);
-      saved = `📶 „${nm(c)}“ je Wi-Fi klient (${wlLab(c.ssid)}), Wi-Fi se spojem nekreslí`;
+      saved = '📶 ' + tr('„{n}“ je Wi-Fi klient ({s}), Wi-Fi se spojem nekreslí', {n: nm(c), s: wlLab(c.ssid)});
       showStatus();
       return;
     }
@@ -3659,7 +4372,7 @@ function setTheme(v) {
   else delete document.documentElement.dataset.theme;
   for (const b of [$('#bTheme'), $('#obTheme')]) {
     b.textContent = THEMES[theme][0];
-    b.title = `Barevný režim: ${THEMES[theme][1]}. Klikni pro přepnutí (podle systému → světlý → tmavý).`;
+    b.title = tr('Barevný režim: {m}. Klikni pro přepnutí (podle systému → světlý → tmavý).', {m: THEMES[theme][1]});
   }
 }
 function nextTheme() {
@@ -3675,13 +4388,16 @@ function setLock(v) {
   const b = $('#bLock');
   b.textContent = locked ? '🔒' : '🔓';
   b.classList.toggle('on', !!locked);
-  b.title = locked ? 'Mapa je zamčená: zařízení jde jen vybrat a upravit v panelu. Klikni pro odemčení.'
-    : 'Zamknout mapu, aby se nic nepohnulo omylem (zařízení, rámečky skupin, čáry schématu); klikat a upravovat v panelu půjde dál';
+  b.title = tr(locked ? 'Mapa je zamčená: zařízení jde jen vybrat a upravit v panelu. Klikni pro odemčení.'
+    : 'Zamknout mapu, aby se nic nepohnulo omylem (zařízení, rámečky skupin, čáry schématu); klikat a upravovat v panelu půjde dál');
   for (const id of ['#bLink', '#bLay']) $(id).disabled = !!locked;
   if (locked) setTool(null);
   render();
 }
-const lockMsg = () => { saved = viewOnly ? '👁 jen prohlížení, upravit jde po kliknutí na ✎ Upravit' : '🔒 mapa je zamčená, odemkni ji tlačítkem v hlavičce'; showStatus(); };
+const lockMsg = () => {
+  saved = viewOnly ? '👁 ' + tr('jen prohlížení, upravit jde po kliknutí na ✎ Upravit') : '🔒 ' + tr('mapa je zamčená, odemkni ji tlačítkem v hlavičce');
+  showStatus();
+};
 // zoom kolečkem kolem kurzoru
 function onWheel(e) {
   e.preventDefault();
@@ -4104,25 +4820,28 @@ function setTool(t) {
 // ---------- export: network.md (čitelný přehled pro lidi i Clauda) ----------
 
 // pole zařízení v přehledu: [pole, popisek]
-const MD_F = [['pubip', 'veřejná ip'], ['mrole', 'mesh'], ['va', 'výkon'], ['bat', 'výdrž min'], ['outl', 'zásuvek'], ['joule', 'absorpce J'],
-  ['ip', 'ip'], ['ssid', 'ssid'], ['bands', 'umí pásma'], ['chan', 'kanál'], ['poew', 'poe rozpočet W'],
-  ['model', 'model'], ['sn', 'sn'], ['mac', 'mac'], ['room', 'místo'], ['vlan', 'vlan'], ['note', 'pozn']];
+// (popisky se přeloží při zápisu, hodnoty z pevných seznamů MR a BANDS taky)
+const MD_F = [['pubip', trK('veřejná ip')], ['mrole', 'mesh'], ['va', trK('výkon')], ['bat', trK('výdrž min')], ['outl', trK('zásuvek')], ['joule', trK('absorpce J')],
+  ['ip', 'ip'], ['ssid', 'ssid'], ['bands', trK('umí pásma')], ['chan', trK('kanál')], ['poew', trK('poe rozpočet W')],
+  ['model', 'model'], ['sn', 'sn'], ['mac', 'mac'], ['room', trK('místo')], ['vlan', 'vlan'], ['note', trK('pozn')]];
+const MD_TR = new Set(['mrole', 'bands']);
 // jeden řádek o zařízení: [id] typ "název" · pole:hodnota · …
 function desc(d) {
   const p = [`[${d.id}] ${T[d.t]?.[0] || d.t}${d.n ? ` "${d.n}"` : ''}`];
-  if (d.wan) p.push('přípojka:' + d.wan);
+  if (d.wan) p.push(tr('přípojka') + ':' + tr(d.wan));
   if (d.isp) p.push('isp:' + d.isp);
-  if (d.down || d.up) p.push(`rychlost:${d.down || '?'}/${d.up || '?'} Mb/s`);
+  if (d.down || d.up) p.push(tr('rychlost') + `:${d.down || '?'}/${d.up || '?'} Mb/s`);
   for (const [f, k] of MD_F) {
-    const v = f == 'room' ? roomOf(d) : f == 'ssid' && d.ssid == WL_UNK ? '(neuvedené)' : d[f];
-    if (v) p.push(k + ':' + String(v).replace(/\s*\n\s*/g, '; '));
+    let v = f == 'room' ? roomOf(d) : f == 'ssid' && d.ssid == WL_UNK ? tr('(neuvedené)') : d[f];
+    if (v && MD_TR.has(f)) v = tr(v);
+    if (v) p.push(tr(k) + ':' + String(v).replace(/\s*\n\s*/g, '; '));
   }
   const vl = (d.vlans || []).filter(v => Object.keys(v).length), ss = (d.ssids || []).filter(s => Object.keys(s).length);
-  if (vl.length) p.push('vlany:' + vl.map(v => [v.id, v.n, v.net].filter(Boolean).join(' ')).join(', '));
-  if (portList(d).length) p.push('porty:' + portGroups(d).filter(x => x.ps.length).map(({g, ps}) => pgLab(g) + (ranges(ps) == g.r ? '' : ' ' + ranges(ps))).join(', '));
+  if (vl.length) p.push(tr('vlany') + ':' + vl.map(v => [v.id, v.n, v.net].filter(Boolean).join(' ')).join(', '));
+  if (portList(d).length) p.push(tr('porty') + ':' + portGroups(d).filter(x => x.ps.length).map(({g, ps}) => pgLab(g) + (ranges(ps) == g.r ? '' : ' ' + ranges(ps))).join(', '));
   if (ss.length) p.push('wifi:' + ss.map(s => (s.n || '?') + (s.band || s.vlan ? ` (${[s.band, s.vlan && 'vlan ' + s.vlan].filter(Boolean).join(', ')})` : '')).join(', '));
   const m = VLM[d.id];  // odvozené členství (ruční pole vlan už je výše)
-  if (!d.vlan && m?.src) p.push('vlan≈' + [...m.u, ...m.t.map(v => v + ' (tag)')].join(', '));
+  if (!d.vlan && m?.src) p.push('vlan≈' + [...m.u, ...m.t.map(v => v + ' (' + tr('tag') + ')')].join(', '));
   return p.join(' · ');
 }
 // porty spoje ve směru od zařízení from: „1→3“
@@ -4146,7 +4865,7 @@ function linksMd(ls, from) {
 function pvMd(d) {
   const g = {};
   for (const [p, pv] of Object.entries(pvAll(d)).sort((x, y) => ncmp(x[0], y[0]))) {
-    const k = (pv.u || '—') + (pv.t ? ' + tag ' + pv.t.join(',') : '');
+    const k = (pv.u || '—') + (pv.t ? ' + ' + tr('tag') + ' ' + pv.t.join(',') : '');
     (g[k] ??= []).push(p);
   }
   return Object.entries(g).map(([k, ps]) => ranges(ps) + ' ' + k).join('; ');
@@ -4157,10 +4876,10 @@ function portsMd() {
     const pl = portList(d), pm = portMap(d.id), vl = pvMd(d);
     if (!Object.keys(pm).length && !vl) return null;
     const ks = [...pl, ...Object.keys(pm).filter(p => !pl.includes(p))], ps = poeSet(d), pu = poeUse(d);
-    const used = ks.filter(p => pm[p]).map(p => p + (ps.has(p) ? '⚡' : '') + '→' + pm[p].map(([o, l]) => o + (l.w ? ` ${l.w}W` : '')).join('+') + (pm[p].length > 1 ? ' (!duplicitní)' : ''));
+    const used = ks.filter(p => pm[p]).map(p => p + (ps.has(p) ? '⚡' : '') + '→' + pm[p].map(([o, l]) => o + (l.w ? ` ${l.w}W` : '')).join('+') + (pm[p].length > 1 ? ' (!' + tr('duplicitní') + ')' : ''));
     const free = pl.filter(p => !pm[p]);
-    return `- [${d.id}]${d.n ? ` "${d.n}"` : ''}: ${used.join(', ')}${free.length ? ` · volné: ${ranges(free)}` : ''}`
-      + `${pu || d.poew && ps.size ? ` · PoE odběr ${+pu.toFixed(1)}${d.poew ? '/' + d.poew : ''} W` : ''}`
+    return `- [${d.id}]${d.n ? ` "${d.n}"` : ''}: ${used.join(', ')}${free.length ? ' · ' + tr('volné: {p}', {p: ranges(free)}) : ''}`
+      + (pu || d.poew && ps.size ? ' · ' + tr('PoE odběr {w} W', {w: +pu.toFixed(1) + (d.poew ? '/' + d.poew : '')}) : '')
       + (vl ? ` · VLAN: ${vl}` : '');
   }).filter(Boolean);
 }
@@ -4168,16 +4887,16 @@ function portsMd() {
 function areasMd() {
   return arTree().map(([a, h]) => {
     const ds = arDevs(a).map(d => d.id);
-    return `${'  '.repeat(h)}- ${a.n}${a.k == 'flr' ? ' (podlaží)' : a.k == 'bld' ? ' (budova)' : a.k == 'out' ? ' (venku)' : ''}${ds.length ? ': ' + ds.join(', ') : ''}`;
+    return `${'  '.repeat(h)}- ${a.n}${a.k == 'flr' ? ' (' + tr('podlaží') + ')' : a.k == 'bld' ? ' (' + tr('budova') + ')' : a.k == 'out' ? ' (' + tr('venku') + ')' : ''}${ds.length ? ': ' + ds.join(', ') : ''}`;
   });
 }
 // sekce Firewall: pravidla v pořadí vyhodnocení, přesměrování portů, upozornění kontrol a poznámky
-const fwEnd = (n, ip, port) => ([n, ip].filter(Boolean).join(' ') || 'vše') + (port ? ':' + port : '');
+const fwEnd = (n, ip, port) => ([n, ip].filter(Boolean).join(' ') || tr('vše')) + (port ? ':' + port : '');
 function fwMd() {
-  const off = r => r.off ? '(vypnuto) ' : '', note = r => r.note ? ` (${r.note})` : '';
-  const rules = fwRows('rules').map((r, i) => `${i + 1}. ${off(r)}${r.a || '?'} "${r.n || ''}" ${r.p || 'vše'}: ${fwEnd(r.sn, r.si, r.sp)} → ${fwEnd(r.dn, r.di, r.dp)}${note(r)}`);
-  const fwd = fwRows('fwd').map(r => `- ${off(r)}${r.k || 'ruční'} "${r.n || ''}" ${r.p || 'vše'} ${r.ep ? ':' + r.ep + ' ' : ''}→ ${r.di || '?'}${r.dp ? ':' + r.dp : ''}${note(r)}`);
-  const chk = ['rules', 'fwd'].flatMap(k => fwChecks(k).flatMap((c, i) => c.map(([w, t]) => `- ${w == 'w' ? '⚠' : 'ⓘ'} ${k == 'rules' ? 'pravidlo' : 'přesměrování'} #${i + 1}: ${t}`)));
+  const off = r => r.off ? '(' + tr('vypnuto') + ') ' : '', note = r => r.note ? ` (${r.note})` : '';
+  const rules = fwRows('rules').map((r, i) => `${i + 1}. ${off(r)}${r.a ? tr(r.a) : '?'} "${r.n || ''}" ${r.p || tr('vše')}: ${fwEnd(r.sn, r.si, r.sp)} → ${fwEnd(r.dn, r.di, r.dp)}${note(r)}`);
+  const fwd = fwRows('fwd').map(r => `- ${off(r)}${r.k || tr('ruční')} "${r.n || ''}" ${r.p || tr('vše')} ${r.ep ? ':' + r.ep + ' ' : ''}→ ${r.di || '?'}${r.dp ? ':' + r.dp : ''}${note(r)}`);
+  const chk = ['rules', 'fwd'].flatMap(k => fwChecks(k).flatMap((c, i) => c.map(([w, t]) => `- ${w == 'w' ? '⚠' : 'ⓘ'} ${k == 'rules' ? tr('pravidlo') : tr('přesměrování')} #${i + 1}: ${t}`)));
   const notes = (D.fw?.note || '').split('\n').filter(x => x.trim());
   return {rules, fwd, chk, notes};
 }
@@ -4220,31 +4939,31 @@ function md() {
   const section = (title, lines, show = lines.length) => show ? ['', title, ...lines] : [];
   const fw = fwMd();
   // Wi-Fi: SSID a jeho klienti; klient zapojený i kabelem je celý ve stromu, tady jen odkaz
-  const wlc = D.devices.filter(isWlc), wlLine = d => adj[d.id].length ? `  - [${d.id}]${d.n ? ` "${d.n}"` : ''} (i kabelem, viz strom)` : '  - ' + desc(d);
+  const wlc = D.devices.filter(isWlc), wlLine = d => adj[d.id].length ? `  - [${d.id}]${d.n ? ` "${d.n}"` : ''} (${tr('i kabelem, viz strom')})` : '  - ' + desc(d);
   const wifi = [...wlList(), {n: WL_UNK}].flatMap(s => {
     const cs = wlc.filter(d => d.ssid == s.n);
     if (!cs.length && s.n == WL_UNK) return [];
     const hs = wlHosts(s.n).map(h => h.id);
-    const inf = [s.band, s.vlan && 'vlan ' + vlName(s.vlan), hs.length && 'vysílá ' + hs.join(', ')].filter(Boolean).join(' · ');
-    return [`- ${s.n == WL_UNK ? 'síť neuvedená' : `"${s.n}"`}${inf ? ` (${inf})` : ''}${cs.length ? '' : ': bez klientů'}`, ...cs.map(wlLine)];
+    const inf = [s.band, s.vlan && 'vlan ' + vlName(s.vlan), hs.length && tr('vysílá {h}', {h: hs.join(', ')})].filter(Boolean).join(' · ');
+    return [`- ${s.n == WL_UNK ? tr('síť neuvedená') : `"${s.n}"`}${inf ? ` (${inf})` : ''}${cs.length ? '' : ': ' + tr('bez klientů')}`, ...cs.map(wlLine)];
   });
   // klienti s SSID, které nikdo nevysílá
   const lost = wlc.filter(d => d.ssid != WL_UNK && !wlFind(d.ssid));
-  if (lost.length) wifi.push('- neznámé SSID', ...lost.map(wlLine));
+  if (lost.length) wifi.push('- ' + tr('neznámé SSID'), ...lost.map(wlLine));
   return [
-    `# Mapa sítě (${new Date().toLocaleString('cs')})`,
-    `Zařízení: ${D.devices.length} · spojů: ${D.links.length} · ─ kabel, ⇢ bezdrát, [id] typ "název"`,
+    '# ' + tr('Mapa sítě') + ` (${new Date().toLocaleString(loc())})`,
+    tr('Zařízení: {d} · spojů: {l} · ─ kabel, ⇢ bezdrát, [id] typ "název"', {d: D.devices.length, l: D.links.length}),
     '', '```', ...out, '```',
-    ...section('## Wi-Fi (SSID a jeho klienti, Wi-Fi se spojem nekreslí)', wifi, wlc.length),
-    ...section('## Porty (port→zařízení, ⚡ = PoE, VLAN: porty síť + tag tagované)', portsMd()),
-    ...section('## Prostory (zařízení přímo v prostoru)', areasMd()),
-    ...section('## Napájení (zdroj ⚡→ spotřebič)', [...pwOnly.map(d => '- ' + desc(d)), ...pw], pw.length),
-    ...section('## Další spoje (smyčky / záložní cesty)', extra),
-    ...section('## Nepřipojená zařízení', iso.map(d => '- ' + desc(d))),
-    ...section('## Firewall (shora dolů, první shoda vyhrává; zdroj → cíl, síť IP:port)', fw.rules),
-    ...section('## Přesměrování portů / UPnP (:vnější port → cílová IP:port)', fw.fwd),
-    ...section('## Firewall: upozornění kontrol', fw.chk),
-    ...section('## Firewall: poznámky', fw.notes),
+    ...section('## ' + tr('Wi-Fi (SSID a jeho klienti, Wi-Fi se spojem nekreslí)'), wifi, wlc.length),
+    ...section('## ' + tr('Porty (port→zařízení, ⚡ = PoE, VLAN: porty síť + tag tagované)'), portsMd()),
+    ...section('## ' + tr('Prostory (zařízení přímo v prostoru)'), areasMd()),
+    ...section('## ' + tr('Napájení (zdroj ⚡→ spotřebič)'), [...pwOnly.map(d => '- ' + desc(d)), ...pw], pw.length),
+    ...section('## ' + tr('Další spoje (smyčky / záložní cesty)'), extra),
+    ...section('## ' + tr('Nepřipojená zařízení'), iso.map(d => '- ' + desc(d))),
+    ...section('## ' + tr('Firewall (shora dolů, první shoda vyhrává; zdroj → cíl, síť IP:port)'), fw.rules),
+    ...section('## ' + tr('Přesměrování portů / UPnP (:vnější port → cílová IP:port)'), fw.fwd),
+    ...section('## ' + tr('Firewall: upozornění kontrol'), fw.chk),
+    ...section('## ' + tr('Firewall: poznámky'), fw.notes),
   ].join('\n') + '\n';
 }
 
@@ -4309,14 +5028,14 @@ function expHtml(o) {
 // do exportu dostanou jen výslovně (o = {fw, note, mac} níž znamená naopak „vynechat“)
 function expOpen() {
   const f = $('#exF');
-  f.name.value = EMB?.name || (store?.http ? store.name : '') || 'Mapa sítě';
+  f.name.value = EMB?.name || (store?.http ? store.name : '') || tr('Mapa sítě');
   for (const k of ['fw', 'note', 'mac']) f[k].checked = false;
   $('#exDlg').showModal();
   f.name.select();
 }
 function onExSubmit(e) {
   e.preventDefault();
-  const f = $('#exF'), o = {name: f.name.value.trim() || 'Mapa sítě'};
+  const f = $('#exF'), o = {name: f.name.value.trim() || tr('Mapa sítě')};
   for (const k of ['fw', 'note', 'mac']) o[k] = f[k].checked ? 0 : 1;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([expHtml(o)], {type: 'text/html'}));
@@ -4324,8 +5043,8 @@ function onExSubmit(e) {
   a.click();
   $('#exDlg').close();
   embDirty = 0;
-  const miss = [o.fw && 'firewallu', o.note && 'poznámek', o.mac && 'MAC'].filter(Boolean);
-  saved = `export „${o.name}“ stažen` + (miss.length ? ` (bez ${miss.join(', ')})` : '');
+  const miss = [o.fw && tr('firewall'), o.note && tr('poznámky'), o.mac && 'MAC'].filter(Boolean);
+  saved = tr('export „{n}“ stažen', {n: o.name}) + (miss.length ? ' ' + tr('(vynechané: {m})', {m: miss.join(', ')}) : '');
   showStatus();
 }
 // vložená data ze souboru HTML (exportu), null = žádná; DOMParser skripty nespouští
@@ -4364,7 +5083,7 @@ function setView(on) {
 function viewEdit() {
   setView(false);
   updDir();
-  saved = 'úpravy zapnuté – ulož do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML';
+  saved = tr('úpravy zapnuté – ulož do složky 📁, nebo jako nový soubor: ⋯ → 🌐 Export HTML');
   showStatus();
 }
 
@@ -4388,7 +5107,7 @@ const FILES = {net: 'network.json', lay: 'layout.json', md: 'network.md'};
 
 // prohlížeč: localStorage 'netmap' = {net, lay}, network.md se tu neukládá
 const stLocal = {
-  name: 'prohlížeč',
+  get name() { return tr('prohlížeč'); },
   async get() {
     const s = lsGet(lsK('netmap'), null);
     return s?.net ? s : null;
@@ -4430,7 +5149,7 @@ function stHttp(base, name = 'NAS') {
     const r = await fetch(base + 'data', {method, body, headers, cache: 'no-store'});
     if (r.status == 401) {
       location.reload();
-      throw new Error('přihlášení vypršelo');
+      throw new Error(tr('přihlášení vypršelo'));
     }
     return r;
   };
@@ -4455,7 +5174,7 @@ function stHttp(base, name = 'NAS') {
       if (st.rev) h['If-Match'] = st.rev;
       const r = await req('PUT', JSON.stringify(f), h);
       if (r.status == 409) {
-        const e = new Error('na NAS je novější verze');
+        const e = new Error(tr('na NAS je novější verze'));
         e.conflict = true;
         throw e;
       }
@@ -4475,7 +5194,7 @@ async function nasFound() {
 }
 // 409: buď načíst verzi z NAS (místní změny se zahodí), nebo NAS přepsat místní verzí
 async function nasLoad() {
-  if (!confirm('Zahodit změny z tohoto prohlížeče a načíst verzi z NAS?')) return;
+  if (!confirm(tr('Zahodit změny z tohoto prohlížeče a načíst verzi z NAS?'))) return;
   store.conflict = false;
   lsSet(lsK('netmapDirty'), 0);
   await loadStore();
@@ -4502,7 +5221,7 @@ function scheduleSave() {
   clearTimeout(saveT);
   savePend = 1;
   saveT = setTimeout(save, 700);
-  saved = 'neuloženo…';
+  saved = tr('neuloženo…');
   showStatus();
 }
 function save() {
@@ -4512,25 +5231,25 @@ function save() {
   chain = chain.then(async () => {
     const f = {net: netJSON(), lay: layJSON()};
     await stLocal.put(f);
-    const t = new Date().toLocaleTimeString('cs');
-    if (store?.conflict) saved = `uloženo jen v prohlížeči ${t}`;
+    const t = new Date().toLocaleTimeString(loc());
+    if (store?.conflict) saved = tr('uloženo jen v prohlížeči {t}', {t});
     else if (store?.http && sameAsBase(f)) {  // jen posun / přiblížení: pohled je vlastní každého zařízení
       lsSet(lsK('netmapDirty'), 0);
-      saved = `uloženo do „${store.name}“`;
+      saved = tr('uloženo do „{n}“', {n: store.name});
     } else if (store) {
       if (store.http) lsSet(lsK('netmapDirty'), 1);
       try {
         f.md = md();
         const n = store.http ? await nasPut(f) : (await store.put(f), -1);
         if (store.http) lsSet(lsK('netmapDirty'), 0);
-        saved = `uloženo do „${store.name}“ ${t}`
-          + (n < 0 ? '' : ' · sloučeno se změnami z jiného zařízení' + (n ? ` (${n}× změna na obou, platí tato)` : ''));
+        saved = tr('uloženo do „{n}“', {n: store.name}) + ' ' + t
+          + (n < 0 ? '' : ' · ' + tr('sloučeno se změnami z jiného zařízení') + (n ? ' ' + tr('({n}× změna na obou, platí tato)', {n}) : ''));
       } catch (e) {
         if (e.conflict) store.conflict = true;
-        saved = '⚠ chyba zápisu: ' + e.message;
+        saved = '⚠ ' + tr('chyba zápisu: {e}', {e: e.message});
       }
-    } else saved = EMB ? 'neuloženo – vyber složku 📁, nebo ulož jako nový soubor: ⋯ → 🌐 Export HTML'
-      : `uloženo jen v prohlížeči ${t} – vyber složku 📁`;
+    } else saved = EMB ? tr('neuloženo – vyber složku 📁, nebo ulož jako nový soubor: ⋯ → 🌐 Export HTML')
+      : tr('uloženo jen v prohlížeči {t}', {t}) + ' – ' + tr('vyber složku 📁');
     showStatus();
   });
 }
@@ -4701,7 +5420,7 @@ function nasPull() {
     store.setRev(r.rev);
     setBase(r);
     await stLocal.put({net: netJSON(), lay: layJSON()});
-    saved = `načteny změny z jiného zařízení ${new Date().toLocaleTimeString('cs')}`;
+    saved = tr('načteny změny z jiného zařízení {t}', {t: new Date().toLocaleTimeString(loc())});
     showStatus();
   });
 }
@@ -4753,7 +5472,7 @@ async function loadStore() {
   save();
 }
 function updDir() {
-  $('#bDir').textContent = store?.http ? '🖧 NAS' : store ? `📁 ${store.name}` : pendDir ? `🔗 Připojit „${pendDir.name}“` : '📁 Vybrat složku';
+  $('#bDir').textContent = store?.http ? '🖧 NAS' : store ? `📁 ${store.name}` : pendDir ? '🔗 ' + tr('Připojit „{d}“', {d: pendDir.name}) : '📁 ' + tr('Vybrat složku');
 }
 // 📁: složka z minula čeká na nové povolení (pendDir), jinak výběr nové
 async function pickDir() {
@@ -4764,7 +5483,7 @@ async function pickDir() {
       const st = stDir(h);
       const has = await st.get();
       store = st;
-      if (has && !confirm(`Složka „${h.name}“ už obsahuje mapu.\nOK = přepsat ji mapou z tohoto souboru, Zrušit = otevřít mapu ze složky.`)) await loadStore();
+      if (has && !confirm(tr('Složka „{d}“ už obsahuje mapu.', {d: h.name}) + '\n' + tr('OK = přepsat ji mapou z tohoto souboru, Zrušit = otevřít mapu ze složky.'))) await loadStore();
       else {
         updDir();
         save();
@@ -4782,7 +5501,7 @@ async function pickDir() {
     }
     await loadStore();
   } catch (e) {
-    if (e.name != 'AbortError') { saved = '⚠ složku nelze otevřít: ' + e.message; showStatus(); }
+    if (e.name != 'AbortError') { saved = '⚠ ' + tr('složku nelze otevřít: {e}', {e: e.message}); showStatus(); }
   }
 }
 // stažení textu jako souboru
@@ -4805,7 +5524,7 @@ async function importFiles(e) {
       const t = await f.text();
       if (/\.html?$/i.test(f.name)) {
         emb = embOf(t);
-        if (!emb) throw new Error(`„${f.name}“ není export mapy sítě`);
+        if (!emb) throw new Error(tr('„{f}“ není export mapy sítě', {f: f.name}));
         net = emb.net;
         lay = emb.lay;
         continue;
@@ -4816,19 +5535,19 @@ async function importFiles(e) {
     }
   } catch (x) {
     e.target.value = '';
-    return alert('Import se nepovedl: ' + x.message);
+    return alert(tr('Import se nepovedl: {e}', {e: x.message}));
   }
   e.target.value = '';
   if (!net && !lay) return;
-  const s = emb?.strip || {}, miss = [s.fw && 'firewall', s.note && 'poznámky', s.mac && 'MAC'].filter(Boolean);
-  if (emb && D.devices.length > 1 && !confirm(`Nahradit tuto mapu (${D.devices.length} zařízení) mapou „${emb.name || '?'}“ ze souboru?`
-    + (miss.length ? `\nV exportu chybí ${miss.join(', ')}: u stejných zařízení zůstanou z této mapy.` : '') + '\nCtrl+Z import vrátí.')) return;
+  const s = emb?.strip || {}, miss = [s.fw && 'firewall', s.note && tr('poznámky'), s.mac && 'MAC'].filter(Boolean);
+  if (emb && D.devices.length > 1 && !confirm(tr('Nahradit tuto mapu ({c} zařízení) mapou „{n}“ ze souboru?', {c: D.devices.length, n: emb.name || '?'})
+    + (miss.length ? '\n' + tr('V exportu chybí {m}: u stejných zařízení zůstanou z této mapy.', {m: miss.join(', ')}) : '') + '\n' + tr('Ctrl+Z import vrátí.'))) return;
   const old = D, u = [...undo, JSON.stringify([D, PT, WT])];
   load(net || netJSON(), lay || layJSON());
   undo = u;  // load undo maže, import se má dát vrátit
   if (emb) {
     embKeep(old, s);
-    saved = `načtena mapa „${emb.name || '?'}“ z exportu HTML`;
+    saved = tr('načtena mapa „{n}“ z exportu HTML', {n: emb.name || '?'});
   }
   render();
   renderProps();
@@ -4861,12 +5580,12 @@ function obWhen(iso) {
   const t = new Date(iso);
   const day = x => new Date(x).setHours(0, 0, 0, 0);
   const n = Math.round((day(Date.now()) - day(t)) / 864e5);
-  const h = t.toLocaleTimeString('cs', {hour: '2-digit', minute: '2-digit'});
-  return n == 0 ? 'dnes ' + h : n == 1 ? 'včera ' + h : t.toLocaleDateString('cs');
+  const h = t.toLocaleTimeString(loc(), {hour: '2-digit', minute: '2-digit'});
+  return n == 0 ? tr('dnes {h}', {h}) : n == 1 ? tr('včera {h}', {h}) : t.toLocaleDateString(loc());
 }
 // náhled mapy = topologie nakreslená stejně jako v editoru (render do skrytého #vp, všechny vrstvy, bez štítků portů)
 function obPreview(f) {
-  const none = '<span class="hint">prázdná mapa</span>';
+  const none = `<span class="hint">${tr('prázdná mapa')}</span>`;
   if (!f) return none;
   const keep = [lyOn, vlOff, arF, showPB, showLL, showGF, q];
   try {
@@ -4907,13 +5626,13 @@ function obImgLoad(file) {
   };
   im.onerror = () => {
     URL.revokeObjectURL(url);
-    alert('Obrázek se nepodařilo načíst.');
+    alert(tr('Obrázek se nepodařilo načíst.'));
   };
   im.src = url;
 }
 // náhled v okně ✎: vlastní obrázek, jinak topologie
 function obImShow() {
-  $('#obIm .obPv').innerHTML = obImg ? `<img src="${esc(obImg)}" alt="">` : obPv[obEdit?.id] || '<span class="hint">topologie</span>';
+  $('#obIm .obPv').innerHTML = obImg ? `<img src="${esc(obImg)}" alt="">` : obPv[obEdit?.id] || `<span class="hint">${tr('topologie')}</span>`;
   $('#obImX').hidden = !obImg;
 }
 // GET api/objects; náhledy se dotahují zvlášť, ať je přehled vidět hned
@@ -4929,27 +5648,27 @@ async function obLoad() {
       .then(r => r.ok ? r.json() : null)
       .catch(() => null)
       .then(f => {
-        obPv[o.id] = f ? obPreview(f) : '<span class="hint">prázdná mapa</span>';
+        obPv[o.id] = f ? obPreview(f) : `<span class="hint">${tr('prázdná mapa')}</span>`;
         const e = document.querySelector(`.ob[data-ob="${o.id}"] .obPv`);
         if (e && !o.img) e.innerHTML = obPv[o.id];
       });
   }
 }
 function obRender() {
-  $('#obL').innerHTML = obList.map(o => `<div class="ob" data-ob="${o.id}" tabindex="0" title="Otevřít mapu">
+  $('#obL').innerHTML = obList.map(o => `<div class="ob" data-ob="${o.id}" tabindex="0" title="${tr('Otevřít mapu')}">
     <div class="obPv">${o.img ? `<img src="${esc(o.img)}" alt="">` : obPv[o.id] ?? ''}</div>
-    <div class="obT"><b>${esc(o.name)}</b>${o.nas ? '<span class="obN" title="Tady běží NAS, jen tady jde skenovat síť">🖧 NAS</span>' : ''}<span class="sp"></span>`
-    + '<button class="mini" data-oa="edit" title="Upravit název, popisek a značku NAS">✎</button>'
-    + `<button class="mini" data-oa="del" title="Smazat objekt">🗑</button></div>
+    <div class="obT"><b>${esc(o.name)}</b>${o.nas ? `<span class="obN" title="${tr('Tady běží NAS, jen tady jde skenovat síť')}">🖧 NAS</span>` : ''}<span class="sp"></span>`
+    + `<button class="mini" data-oa="edit" title="${tr('Upravit název, popisek a značku NAS')}">✎</button>`
+    + `<button class="mini" data-oa="del" title="${tr('Smazat objekt')}">🗑</button></div>
     ${o.desc ? `<div class="obD">${esc(o.desc)}</div>` : ''}
-    <div class="obI">${o.devices} zařízení · změna ${obWhen(o.changed)}</div>
-  </div>`).join('') + '<button class="ob obAdd" data-oa="new">＋ Nový objekt</button>';
+    <div class="obI">${tr('{n} zařízení · změna {t}', {n: o.devices, t: obWhen(o.changed)})}</div>
+  </div>`).join('') + `<button class="ob obAdd" data-oa="new">＋ ${tr('Nový objekt')}</button>`;
 }
 function obShow() {
   document.body.classList.add('objs');
   $('#objs').hidden = false;
-  document.title = 'Objekty – Mapa sítě';
-  obLoad().catch(e => { $('#obL').innerHTML = `<span class="hint">⚠ seznam objektů nejde načíst: ${esc(e.message)}</span>`; });
+  document.title = tr('Objekty') + ' – ' + tr('Mapa sítě');
+  obLoad().catch(e => { $('#obL').innerHTML = `<span class="hint">⚠ ${tr('seznam objektů nejde načíst: {e}', {e: esc(e.message)})}</span>`; });
 }
 const obOpen = o => { location.href = '?o=' + encodeURIComponent(o.id); };
 function onObClick(e) {
@@ -4967,7 +5686,7 @@ function onObKey(e) {
 function obDlg(o) {
   obEdit = o;
   const f = $('#obF');
-  $('#obH').textContent = o ? `✎ ${o.name}` : '＋ Nový objekt';
+  $('#obH').textContent = o ? `✎ ${o.name}` : '＋ ' + tr('Nový objekt');
   f.name.value = o?.name || '';
   f.desc.value = o?.desc || '';
   f.nas.checked = !!o?.nas;
@@ -4982,7 +5701,7 @@ async function onObSubmit(e) {
   e.preventDefault();
   const f = $('#obF'), b = {name: f.name.value.trim(), desc: f.desc.value.trim(), nas: f.nas.checked, img: obImg};
   const other = obList.find(x => x.nas && x.id != obEdit?.id);
-  if (b.nas && other && !confirm(`NAS může mít jen jeden objekt, „${other.name}“ značku ztratí. Pokračovat?`)) return;
+  if (b.nas && other && !confirm(tr('NAS může mít jen jeden objekt, „{n}“ značku ztratí. Pokračovat?', {n: other.name}))) return;
   try {
     const r = await fetch(obEdit ? 'api/objects/' + obEdit.id : 'api/objects', {
       method: obEdit ? 'PATCH' : 'POST',
@@ -4991,7 +5710,7 @@ async function onObSubmit(e) {
       body: JSON.stringify(b),
     });
     if (r.status == 401) return location.reload();
-    if (!r.ok) throw new Error(r.status == 400 ? 'zkontroluj název (1–60 znaků), popisek (do 300) a obrázek' : 'server ' + r.status);
+    if (!r.ok) throw new Error(r.status == 400 ? tr('zkontroluj název (1–60 znaků), popisek (do 300) a obrázek') : 'server ' + r.status);
     const o = await r.json();
     $('#obDlg').close();
     if (!obEdit) return obOpen(o);
@@ -5001,10 +5720,10 @@ async function onObSubmit(e) {
   }
 }
 async function obDel(o) {
-  if (!confirm(`Smazat objekt „${o.name}“ (${o.devices} zařízení)?\nNa NAS se přesune do koše data/_deleted/, vrátit ho jde jen ručně.`)) return;
+  if (!confirm(tr('Smazat objekt „{n}“ ({c} zařízení)?', {n: o.name, c: o.devices}) + '\n' + tr('Na NAS se přesune do koše data/_deleted/, vrátit ho jde jen ručně.'))) return;
   const r = await fetch('api/objects/' + o.id, {method: 'DELETE', cache: 'no-store'});
   if (r.status == 401) return location.reload();
-  if (!r.ok) return alert('Smazání se nepovedlo: server ' + r.status);
+  if (!r.ok) return alert(tr('Smazání se nepovedlo: server {s}', {s: r.status}));
   try { for (const k of OBJ_KEYS) localStorage.removeItem(lsK(k, o.id)); } catch {}
   obLoad();
 }
@@ -5018,7 +5737,7 @@ async function obInfo() {
       return false;
     }
     if (r.status == 404) {
-      alert(`Objekt „${OID}“ na NAS není (je smazaný?).`);
+      alert(tr('Objekt „{id}“ na NAS není (je smazaný?).', {id: OID}));
       location.href = location.pathname;
       return false;
     }
@@ -5068,6 +5787,7 @@ $('#obImX').onclick = () => {
   obImShow();
 };
 $('#obTheme').onclick = nextTheme;
+$('#obLang').onclick = nextLang;
 $('#obOut').onclick = logout;
 $('#bNasLoad').onclick = nasLoad;
 // NAS: cizí změny při návratu do okna a každých 30 s
@@ -5075,7 +5795,7 @@ addEventListener('focus', nasPull);
 document.addEventListener('visibilitychange', nasPull);
 setInterval(nasPull, 30000);
 $('#bNasMine').onclick = nasMine;
-$('#bMd').onclick = async () => { await navigator.clipboard.writeText(md()); saved = 'přehled zkopírován do schránky'; showStatus(); };
+$('#bMd').onclick = async () => { await navigator.clipboard.writeText(md()); saved = tr('přehled zkopírován do schránky'); showStatus(); };
 $('#bAr').onclick = arOpen;
 $('#vwM').onclick = onVwClick;
 $('#vwM').onchange = onVwChange;
@@ -5087,15 +5807,19 @@ $('#bLay').onclick = autoLayout;
 $('#bFit').onclick = fit;
 $('#bLock').onclick = () => setLock(!locked);
 $('#bTheme').onclick = nextTheme;
+$('#bLang').onclick = nextLang;
 $('#bSch').onclick = () => { if (V.sch) delete V.sch; else V.sch = 1; render(); scheduleSave(); };
 $('#qs').oninput = e => { q = e.target.value; render(); };
 
 
-// levá paleta: zařízení (klik nebo přetažení na plochu) a legenda spojů
-$('#pal').innerHTML = '<h4>Zařízení</h4>'
-  + Object.entries(T).map(([k, [n, i, , ic]]) => `<button draggable="true" data-t="${k}" title="Klikni nebo přetáhni na plochu">${ic ? icPath(ic) : i} ${n}</button>`).join('')
-  + '<h4>Spoje</h4>'
-  + Object.values(L).map(([n, c, d]) => `<div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="${c}" stroke-width="2.5"${d ? ` stroke-dasharray="${d}"` : ''}/></svg>${n}</div>`).join('');
+// levá paleta: zařízení (klik nebo přetažení na plochu) a legenda spojů; překresluje se po změně jazyka
+function palRender() {
+  const hint = tr('Klikni nebo přetáhni na plochu');
+  $('#pal').innerHTML = `<h4>${tr('Zařízení')}</h4>`
+    + Object.entries(T).map(([k, [n, i, , ic]]) => `<button draggable="true" data-t="${k}" title="${hint}">${ic ? icPath(ic) : i} ${n}</button>`).join('')
+    + `<h4>${tr('Spoje')}</h4>`
+    + Object.values(L).map(([n, c, d]) => `<div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="${c}" stroke-width="2.5"${d ? ` stroke-dasharray="${d}"` : ''}/></svg>${n}</div>`).join('');
+}
 $('#pal').onclick = e => {
   const b = e.target.closest('[data-t]');
   if (!b) return;
@@ -5154,15 +5878,17 @@ $('#bkDlg').addEventListener('click', onBkClick);
 // ---------- start ----------
 // Na NAS bez ?o= přehled objektů. Jinak data z prohlížeče, pak server na NAS (objekt ?o=),
 // bez NAS složka z minula (když povolení trvá, načte se z ní, jinak tlačítko „Připojit“).
+setLang(lang);
+palRender();
 lySave();
 setWide(wide);
 setLock(locked);
 setTheme(theme);
 (async () => {
   if (EMB) {  // export HTML: data ze souboru, jen prohlížení; NAS, localStorage ani složku z minula nepoužívá
-    try { load(EMB.net, EMB.lay); } catch { saved = '⚠ data v souboru jsou poškozená'; }
-    document.title = `${EMB.name || 'Mapa sítě'} – Mapa sítě`;
-    $('#hT').textContent = '🗺️ ' + (EMB.name || 'Mapa sítě');
+    try { load(EMB.net, EMB.lay); } catch { saved = '⚠ ' + tr('data v souboru jsou poškozená'); }
+    document.title = `${EMB.name || tr('Mapa sítě')} – ${tr('Mapa sítě')}`;
+    $('#hT').textContent = '🗺️ ' + (EMB.name || tr('Mapa sítě'));
     setView(true);
     fit();  // příjemce má jinou obrazovku: celá mapa místo pohledu z exportu
   }
@@ -5183,13 +5909,13 @@ setTheme(theme);
     if (o === false) return;
     const name = o?.name || OID;
     store = stHttp(`api/objects/${OID}/`, name);
-    document.title = `${name} – Mapa sítě`;
+    document.title = `${name} – ${tr('Mapa sítě')}`;
     $('#hT').textContent = '🗺️ ' + name;
     $('#bObjs').hidden = false;
     $('#bOut').hidden = false;
     $('#bScan').hidden = !o?.nas;  // sken jen u objektu s NAS
     $('#bBk').hidden = false;
-    try { await loadStore(); } catch (e) { saved = '⚠ NAS neodpovídá: ' + e.message; }
+    try { await loadStore(); } catch (e) { saved = '⚠ ' + tr('NAS neodpovídá: {e}', {e: e.message}); }
   } else if (!EMB) try {
     const h = await idb('readonly', 'dir');
     if (h) {
@@ -5197,8 +5923,8 @@ setTheme(theme);
       else { pendDir = h; updDir(); }
     }
   } catch {}
-  if (EMB) saved ||= 'export ' + (EMB.at ? new Date(EMB.at).toLocaleString('cs') : '');
-  else if (!store) saved = 'ukládá se jen v prohlížeči – vyber složku 📁';
+  if (EMB) saved ||= 'export ' + (EMB.at ? new Date(EMB.at).toLocaleString(loc()) : '');
+  else if (!store) saved = tr('ukládá se jen v prohlížeči') + ' – ' + tr('vyber složku 📁');
   showStatus();
 })();
 </script>

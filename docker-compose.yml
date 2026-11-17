@@ -1,5 +1,5 @@
 # Mapa domácí sítě na NAS (docs/nas.md).
-# Ve složce s tímto souborem leží server/, ukazka/, www/ (mapa.html), config/ a data/.
+# Ve složce s tímto souborem leží server/, ukazka/, ukazka-en/, www/ (mapa.html), config/ a data/.
 services:
   netmap:
     build:
@@ -13,6 +13,7 @@ services:
       PORT: 8780
       TZ: Europe/Prague
       # SCAN_NETS: 192.168.1.0/24   # co skenovat; bez toho síť serveru (/24)
+      # NETMAP_LANG: cs             # jazyk příkazů v terminálu (passwd, 2fa, demo); bez toho angličtina
     volumes:
       - ./www:/app/www:ro       # nová verze editoru = přepsat www/mapa.html, bez přestavby
       - ./data:/app/data
