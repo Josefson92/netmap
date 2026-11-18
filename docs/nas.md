@@ -21,17 +21,18 @@ Editor má tři úložiště se stejným rozhraním (`name`, `get() → {net, la
 
 - Při startu: když stránka běží přes `http(s)` a `GET api/health` odpoví, editor pracuje se serverem a tlačítko 📁 ukáže `🖧 NAS`. Jinak vše funguje lokálně (složka z IndexedDB nebo prohlížeč).
 - `stLocal` se zapisuje vždy jako záloha.
+- Když server data objektu nemá (nový server, smazaná složka), ale v prohlížeči zůstala mapa z dřívějška, editor ji nezobrazí jako uloženou ani sám nenahraje: začne prázdnou mapou a stavový řádek nabídne „Nahrát na NAS“ / „Zahodit“. Výjimkou jsou první změny nového objektu, které se ještě nepodařilo odeslat; ty se pošlou.
 - **Souběžné úpravy** (víc počítačů): `get` vrátí i `rev` (otisk obsahu `net` + `lay`), `put` ho posílá v `If-Match`. Když se data mezitím změnila jinde, server vrátí `409` a editor obě verze třícestně sloučí (zařízení, spoje a prostory po polích). Kdyby to nešlo, stavový řádek nabídne „Načíst z NAS“ (zahodí místní změny) nebo „Přepsat NAS mou verzí“.
 
 ## Objekty
 
 Data jsou po objektech (dům, chata, kancelář…). Každý objekt má složku `data/<id>/` s vlastními soubory a zálohami. Editor bez `?o=` v adrese ukáže přehled objektů a objekt otevírá jako `mapa.html?o=<id>`. Data v prohlížeči (localStorage) má po objektech s příponou `@id`.
 
-Na prázdném serveru se při prvním otevření přehledu založí prázdný objekt „Domov“ (označený „tady je NAS“) a objekt „Ukázka“ s fiktivní sítí ze složky `ukazka/`. Pro anglický prohlížeč jsou to „Home“ a „Demo“ ze složky `ukazka-en/`. Ukázku jde kdykoli založit znovu příkazem `python -m netmap demo` (`demo cs` / `demo en`).
+Na prázdném serveru se při prvním otevření přehledu založí prázdný objekt „Domov“ (označený „tady je NAS“) a objekt „Ukázka“ s fiktivní sítí ze složky `ukazka/`. Pro anglický prohlížeč jsou to „Home“ a „Demo“ ze složky `ukazka-en/`. Ukázka se zakládá jen takhle jednou; kdo ji smaže, už se nevrátí.
 
 ## Jazyk
 
-Přihlašovací a nastavovací stránka jsou česky nebo anglicky: platí ruční volba z editoru (cookie `netmapLang`, editor ji nastaví po přepnutí jazyka), jinak první jazyk prohlížeče (`Accept-Language`; cs/sk = čeština, jinak angličtina). Na přihlašovací stránce je přepínač CZ/EN. Příkazy v terminálu (`passwd`, `2fa`, `demo`) mluví podle `NETMAP_LANG` (`cs`/`en`), jinak podle `LANG`, bez nich anglicky.
+Přihlašovací a nastavovací stránka jsou česky nebo anglicky: platí ruční volba z editoru (cookie `netmapLang`, editor ji nastaví po přepnutí jazyka), jinak první jazyk prohlížeče (`Accept-Language`; cs/sk = čeština, jinak angličtina). Na přihlašovací stránce je přepínač CZ/EN. Nouzové příkazy v terminálu (`passwd`, `2fa`) mluví podle `NETMAP_LANG` (`cs`/`en`), jinak podle `LANG`, bez nich anglicky.
 
 ## API
 
@@ -52,7 +53,8 @@ Všechno je pod `/api/` a data se posílají jako text (stejné soubory jako ve 
 | DELETE | `/api/objects/{id}/backups/{bid}` | smazání zálohy |
 | POST | `/api/objects/{id}/scan` | spustí sken (jeden najednou), `202`; jen objekt s NAS, jinak `403` |
 | GET | `/api/objects/{id}/scan` | `{state: idle/running, at, hosts: [{ip, mac, name, vendor}]}` |
-| GET | `/api/health` | pro Docker healthcheck (bez přihlášení, stejně jako login, setup a logout) |
+| GET | `/api/health` | pro Docker healthcheck (bez přihlášení, stejně jako login, setup a logout; verzi neprozrazuje) |
+| GET | `/api/version` | `{version, check, at, latest, url}`: verze serveru a novější vydání na GitHubu (`latest` jen když je novější) |
 | POST | `/api/login` | `{user, pass, code?}` → cookie `netmap_s`; `401` / `{need: 'code'}` |
 | POST | `/api/setup` | první účet: `{code, user, pass}` (kód z protokolu kontejneru) → cookie `netmap_s`; `401` špatný kód, `400` krátké heslo, `409` účet už je |
 | POST | `/api/logout` | smaže relaci |
@@ -68,14 +70,17 @@ Server před zápisem zkontroluje, že `net` a `lay` jsou platný JSON (`net` m�
 - Bez platné relace vrací server místo `/` malou přihlašovací stránku a API odpovídá `401`.
 - Účet je jeden, uložený v `config/auth.json` (mimo `data/`, takže se nezálohuje spolu s mapou a nedostane se do exportu): `{user, hash, totp?}`. Heslo je hashované přes `hashlib.scrypt` se solí (N=2^15, r=8, p=3 podle OWASP; parametry jsou v hashi).
 - **První účet se zakládá v prohlížeči:** dokud účet není, server při startu vypíše do protokolu kontejneru jednorázový kód (`1234-5678-9012`) a místo editoru ukazuje formulář kód + jméno + heslo. Kdo stránku jen vidí v síti, účet bez kódu nezaloží; špatný kód se počítá jako špatné přihlášení. Po založení je uživatel rovnou přihlášený a kód přestane platit (nový vznikne až restartem bez účtu).
-- Další nastavení se dělá z příkazové řádky kontejneru (Container Manager → Terminál, nebo `docker exec -it netmap …`). Příkazy běží jako root, ale soubory zapisují pod stejným uživatelem jako server (vlastník složky `config/`):
-  - `python -m netmap passwd`: změní jméno a heslo (aspoň 10 znaků) a odhlásí všechny relace;
-  - `python -m netmap 2fa on`: vygeneruje tajný klíč, vypíše `otpauth://` odkaz a QR kód pro aplikaci (Google Authenticator, Aegis, 1Password…). 2FA se zapne až po zadání prvního platného kódu;
-  - `python -m netmap 2fa off`: 2FA vypne;
-  - `python -m netmap demo`: založí objekt „Ukázka“ s fiktivní sítí.
+- **Účet se dál spravuje v editoru:** ⋯ → 🔐 Účet (v přehledu objektů tlačítko 🔐 Účet). Každá změna chce současné heslo; špatné se počítá jako špatné přihlášení.
+  - Změna jména a hesla (aspoň 10 znaků) odhlásí ostatní zařízení, tenhle prohlížeč dostane novou relaci.
+  - Zapnutí 2FA: server vygeneruje tajný klíč a ukáže QR kód (a klíč k ručnímu opsání) pro aplikaci s kódy (Google Authenticator, Aegis, 1Password…). Klíč server nikam neukládá, dokud se nezadá první platný kód.
+  - Vypnutí 2FA chce i platný kód z aplikace.
+  - API: `GET /api/account` (`{user, totp, min}`), `POST /api/account/password` `{pass, user, new}`, `POST /api/account/2fa/new` `{pass}` → `{secret, url, qr}`, `/2fa/on` `{pass, secret, code}`, `/2fa/off` `{pass, code}`. Chyby jsou `403` (`wrong` = heslo, `code` = kód), aby je editor nebral jako vypršelou relaci.
+- **Nouzová cesta z příkazové řádky** (zapomenuté heslo, ztracený telefon s kódy): Container Manager → Terminál, nebo `docker exec -it netmap …`. Příkazy běží jako root, ale soubory zapisují pod stejným uživatelem jako server (vlastník složky `config/`):
+  - `python -m netmap passwd`: nastaví jméno a heslo a odhlásí všechny relace;
+  - `python -m netmap 2fa off`: 2FA vypne (`2fa on` ho zapne s QR kódem v terminálu).
 - TOTP podle RFC 6238 (30 s, 6 číslic, tolerance ±1 krok), bez knihovny.
 - Relace: náhodný token v cookie `HttpOnly`, `SameSite=Strict` (a `Secure` za HTTPS), platnost 30 dní, přežije restart kontejneru (`config/sessions.json`).
-- Přihlašovací formulář má vždy i pole pro kód 2FA a odpověď je jen „přihlášeno“ / „špatně“: nejde z ní poznat, jestli sedělo heslo, ani jestli je 2FA zapnuté.
+- Přihlášení má dva kroky: formulář chce jméno a heslo, a když sedí a 2FA je zapnuté, server odpoví `401 {error: 'code'}` a stránka ukáže pole pro kód. Tím prozradí, že heslo sedělo (vědomý ústupek pohodlí; hádání hesla i kódu dál brzdí ochrana níž). Špatné jméno, heslo nebo kód je jen „špatně“ bez rozlišení. Kód jde použít jen jednou.
 - Ochrana proti hádání: po 5 špatných pokusech z jedné IP čeká další pokus 1 minutu, s každou další chybou se čekání zdvojnásobí. Navíc platí celkový limit 30 chyb za minutu ze všech adres dohromady.
 - Změny (POST, PUT, PATCH, DELETE) přijímá server jen z vlastní stránky (`Sec-Fetch-Site`, starší prohlížeče `Origin`). Samotné `SameSite=Strict` nestačí, protože jiná aplikace na stejném NAS je pro prohlížeč týž „site“.
 - Velikost požadavku je omezená a tělo se čte po částech (přihlášení 4 kB, údaje objektu 1 MB, mapa 20 MB).
@@ -85,21 +90,19 @@ Server před zápisem zkontroluje, že `net` a `lay` jsou platný JSON (`net` m�
 ## Soubory na serveru
 
 ```
-netmap/          kopie repozitáře
+netmap/          složka projektu (na Synology např. docker/netmap)
   docker-compose.yml
-  mapa.html      editor (je i v image)
-  server/        netmap/ (balíček), Dockerfile, entrypoint.sh, requirements.txt
-  ukazka/        network.json, layout.json (ukázková síť pro objekt „Ukázka“)
-  ukazka-en/     totéž anglicky (objekt „Demo“)
   www/           volitelně vlastní mapa.html (má přednost před editorem z image)
-  config/        auth.json, sessions.json (vznikne sama)
-  data/          (vznikne sama)
+  config/        auth.json, sessions.json
+  data/
     domov/       meta.json ({name, desc, nas}), network.json, layout.json, network.md
       backup/    2026-11-20_143005/{network.json, layout.json, network.md}
     ukazka/      … další objekty stejně
     scan/        last.json (sken je jeden pro celý server)
     _deleted/    smazané objekty
 ```
+
+Editor, server a ukázkové sítě (`ukazka/`, `ukazka-en/`) jsou v image, kopie repozitáře na serveru není potřeba. Složky `data/` a `config/` musí na Synology existovat předem (viz Nasazení), jinde je Docker vytvoří sám.
 
 ## Zálohy
 
@@ -111,28 +114,35 @@ netmap/          kopie repozitáře
 
 ## Docker
 
-- **Hotový image** `ghcr.io/josefson92/netmap` (`latest` = poslední `main`, verze podle značek `v1.2.3`; x86-64 i ARM64) staví GitHub Actions (`.github/workflows/image.yml`) ve veřejném repozitáři. `docker-compose.yml` ho jen stáhne, na serveru tedy není potřeba nic dalšího než tento soubor.
+- **Hotový image** `ghcr.io/josefson92/netmap` (`latest` = poslední `main`, vydání podle značek `v1.2.3` jako `:1.2.3` a `:1.2`; x86-64 i ARM64) staví GitHub Actions (`.github/workflows/image.yml`) ve veřejném repozitáři. `docker-compose.yml` ho jen stáhne, na serveru tedy není potřeba nic dalšího než tento soubor.
 - Vlastní sestavení: `server/Dockerfile` (základ `python:3.12-slim`, kontext je kořen repozitáře kvůli `mapa.html`, `ukazka/` a `ukazka-en/`); v `docker-compose.yml` místo `image:` řádek `build:` z komentáře. Editor je součástí image; kdo chce jinou verzi bez nového image, připojí `./www:/app/www:ro` s vlastním `www/mapa.html`.
 - **Uživatel serveru se hledá sám.** Start (`server/entrypoint.sh`) běží chvíli jako root, vytvoří `data/` a `config/` a vyzkouší zápis postupně za: vlastníka složky `data/` (když to není root), `1000:1000` a `1000:101`. Na Synology rozhoduje o právech ACL sdílené složky, ne vlastník souboru, a skupina `administrators` (GID 101) v něm má zápis, proto tam vyjde `1000:101`. Když nesmí zapisovat nikdo (čerstvé složky po rootovi bez ACL), předá je prvnímu kandidátovi. Pak soubory s jiným vlastníkem předá vybranému uživateli a server spustí pod ním přes `setpriv` (bez skupin navíc a bez schopností); v protokolu je řádek `netmap: server runs as UID:GID`. `PUID`/`PGID` v compose volbu vynutí. Když zápis nejde vůbec, kontejner skončí s vysvětlením v protokolu.
 - V image je `nmap` se schopností `cap_net_raw` (setcap), server spouští `nmap --privileged`. Kontejner proto nemusí běžet jako root: kořenový souborový systém je jen ke čtení (`read_only`, `/tmp` v paměti) a z práv navíc má jen `NET_RAW`. `no-new-privileges` použít nejde, vypnul by nmapu `cap_net_raw`.
 - `network_mode: host`, port **8780** (nastavitelný `PORT`). Na Synology obsazuje DSM 5000/5001 a 80/443.
 - Volumes: `./data:/app/data`, `./config:/app/config`, volitelně `./www:/app/www:ro`.
-- Proměnné: `PORT`, `SCAN_NETS` (co skenovat, např. `192.168.1.0/24`; bez toho /24 hlavního rozhraní, víc než /22 server odmítne), `TZ`, `NETMAP_LANG`, volitelně `PUID`, `PGID`.
+- Proměnné: `PORT`, `SCAN_NETS` (co skenovat, např. `192.168.1.0/24`; bez toho /24 hlavního rozhraní, víc než /22 server odmítne), `TZ`, `NETMAP_LANG`, `NETMAP_UPDATE_CHECK` (`0` = nekontrolovat nové verze), volitelně `PUID`, `PGID`.
 - Reverzní proxy (na Synology `https://netmap.<nas>` s certifikátem) je **doporučená**: kvůli přihlášení, jinak by heslo a cookie šly po síti otevřeně.
 
 ## Nasazení na Synology
 
 Jen přes DSM, bez SSH a bez nahrávání souborů:
 
-1. **Projekt:** Container Manager → Projekt → Vytvořit. Název `netmap`, cesta: v sdílené složce `docker` vytvořit složku `netmap` a vybrat ji. Zdroj „Vytvořit docker-compose.yml“ a vložit obsah [`docker-compose.yml`](../docker-compose.yml) (kdo chce, upraví `TZ` nebo `SCAN_NETS`, jinak nic). Portál Web Station nezapínat. Container Manager stáhne image a spustí ho.
-2. **Účet:** Container Manager → Kontejner → `netmap` → Protokol: opsat kód pro nastavení. Otevřít `http://<adresa NAS>:8780/`, zadat kód, jméno a heslo.
-3. **Firewall DSM** (jen když je zapnutý): povolit TCP 8780 z domácí sítě (a z VPN, pokud ji používáš).
+1. **Složky:** File Station → sdílená složka `docker` → vytvořit složku `netmap` a v ní prázdné složky `data` a `config`. Container Manager chybějící složky pro volumes sám nevytvoří a projekt skončí chybou „Bind mount failed: '…/netmap/data' does not exist“.
+2. **Projekt:** Container Manager → Projekt → Vytvořit. Název `netmap`, cesta: složka `docker/netmap` z kroku 1. Zdroj „Vytvořit docker-compose.yml“ a vložit obsah [`docker-compose.yml`](../docker-compose.yml) (kdo chce, upraví `TZ` nebo `SCAN_NETS`, jinak nic). Portál Web Station nezapínat. Container Manager stáhne image a spustí ho.
+3. **Účet:** Container Manager → Kontejner → `netmap` → Protokol: opsat kód pro nastavení. Otevřít `http://<adresa NAS>:8780/`, zadat kód, jméno a heslo.
+4. **Firewall DSM** (jen když je zapnutý): povolit TCP 8780 z domácí sítě (a z VPN, pokud ji používáš).
 
 Kdo už má mapu ve složce `data/` z lokálního režimu, dá `network.json` a `layout.json` do `netmap/data/` (File Station) a kontejner restartuje; server je převede na objekt „Domov“.
 
-**Aktualizace:** Container Manager → Projekt → `netmap` → Akce → Zastavit, pak Sestavit (stáhne nový image) a Spustit. `data/` a `config/` zůstanou.
+Jinde než na Synology: `docker-compose.yml` do prázdné složky, `docker compose up -d`, kód je v `docker logs netmap`.
 
-Jinde než na Synology: `docker-compose.yml` do prázdné složky, `docker compose up -d`, kód je v `docker logs netmap`. Aktualizace `docker compose pull && docker compose up -d`.
+## Verze a aktualizace
+
+- **Verze** je v image od sestavení (`NETMAP_VERSION` = `git describe`: `v1.2.3` u vydání, `v1.2.3-4-gabc` u sestavení z `main` po něm, `dev` u vlastního sestavení). Editor ji ukáže v okně 🔐 Účet.
+- **Kontrola nové verze:** server se 1× denně zeptá GitHubu na poslední vydání (`api.github.com/repos/Josefson92/netmap/releases/latest`, `server/netmap/update.py`; prohlížeč sám nikam nesahá). Když je novější, editor ukáže ve stavovém řádku a v přehledu objektů „Je dostupná verze vX (máš vY)“ s odkazem na poznámky k vydání; ✕ ho skryje do další verze. Dotaz prozradí GitHubu adresu, ze které server chodí do internetu; `NETMAP_UPDATE_CHECK: 0` kontrolu vypne.
+- **Server se sám neaktualizuje** (kontejner by potřeboval přístup k Dockeru). Aktualizace na Synology: Container Manager → Projekt → `netmap` → Akce → Zastavit, pak Sestavit (stáhne nový image) a Spustit. Jinde `docker compose pull && docker compose up -d`. `data/` a `config/` zůstanou. Automaticky to umí např. Watchtower.
+- **Připnutá verze:** v `docker-compose.yml` místo `:latest` napiš `:1.0.0` (přesně tohle vydání) nebo `:1.0` (opravy v rámci 1.0). Novou verzi pak dostaneš jen ruční změnou čísla.
+- **Vydání** (ve veřejném repozitáři): značka `v1.2.3` na `main` (`git push --atomic origin main v1.2.3`, aby sestavení z `main` už značku vidělo) a GitHub Release s popisem změn a postupem aktualizace. Workflow postaví `:1.2.3`, `:1.2` a `:latest`.
 
 ## Lokální test
 

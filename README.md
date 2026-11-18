@@ -34,9 +34,11 @@ It draws the network as a **topology**: a tree from the internet down to every d
 The editor saves three files: `network.json` (devices and links), `layout.json` (positions), and `network.md` (the generated text overview).
 
 ### Server
-All you need is [`docker-compose.yml`](docker-compose.yml): the ready-made image `ghcr.io/josefson92/netmap` (x86-64 and ARM64) is downloaded automatically. Put the file into an empty folder and run `docker compose up -d` (Synology: Container Manager → Project → Create, paste the file's contents). Nothing needs to be edited: the folders `data/` and `config/` are created on first start and the server finds a user that can write to them by itself (also on Synology), so it never runs as root.
+All you need is [`docker-compose.yml`](docker-compose.yml): the ready-made image `ghcr.io/josefson92/netmap` (x86-64 and ARM64) is downloaded automatically. Put the file into an empty folder and run `docker compose up -d` (Synology: first create the folder with empty subfolders `data` and `config` in File Station, then Container Manager → Project → Create and paste the file's contents). Nothing needs to be edited: the folders `data/` and `config/` are created on first start (except on Synology) and the server finds a user that can write to them by itself (also on Synology), so it never runs as root.
 
 Open `http://<server>:8780/` and create the account with the one-time code from the container log (`docker logs netmap`). An empty site and a demo site are created in the browser's language. See [`docs/nas.md`](docs/nas.md) (Czech).
+
+**Updates:** once a day the server checks GitHub for a new release and the editor shows a notice with a link to the release notes (`NETMAP_UPDATE_CHECK: 0` turns this off). Update with `docker compose pull && docker compose up -d` (Synology: Container Manager → Project → Stop, Build, Start); `data/` and `config/` are kept. To stay on one version, use `:1.0.0` instead of `:latest` in `docker-compose.yml`.
 
 ### License
 No license has been chosen yet, so all rights are reserved.
@@ -71,9 +73,11 @@ Síť kreslí jako **topologii**: strom od internetu ke každému zařízení, s
 Editor ukládá tři soubory: `network.json` (zařízení a spoje), `layout.json` (pozice) a `network.md` (vygenerovaný textový přehled).
 
 ### Server
-Stačí [`docker-compose.yml`](docker-compose.yml): hotový image `ghcr.io/josefson92/netmap` (x86-64 i ARM64) se stáhne sám. Dej soubor do prázdné složky a spusť `docker compose up -d` (Synology: Container Manager → Projekt → Vytvořit, obsah souboru vložit). Nic se neupravuje: složky `data/` a `config/` vzniknou při prvním startu a server si sám najde uživatele, který do nich smí zapisovat (i na Synology), takže nikdy neběží jako root.
+Stačí [`docker-compose.yml`](docker-compose.yml): hotový image `ghcr.io/josefson92/netmap` (x86-64 i ARM64) se stáhne sám. Dej soubor do prázdné složky a spusť `docker compose up -d` (Synology: nejdřív ve File Station vytvoř složku a v ní prázdné složky `data` a `config`, pak Container Manager → Projekt → Vytvořit, obsah souboru vložit). Nic se neupravuje: složky `data/` a `config/` vzniknou při prvním startu (kromě Synology) a server si sám najde uživatele, který do nich smí zapisovat (i na Synology), takže nikdy neběží jako root.
 
 Otevři `http://<server>:8780/` a založ účet s jednorázovým kódem z protokolu kontejneru (`docker logs netmap`). Server založí prázdný objekt a ukázkovou síť v jazyce prohlížeče. Podrobnosti jsou v [`docs/nas.md`](docs/nas.md).
+
+**Aktualizace:** server se 1× denně podívá na GitHub po novém vydání a editor ukáže upozornění s odkazem na poznámky k vydání (`NETMAP_UPDATE_CHECK: 0` to vypne). Aktualizace `docker compose pull && docker compose up -d` (Synology: Container Manager → Projekt → Zastavit, Sestavit, Spustit); `data/` a `config/` zůstanou. Kdo chce zůstat na jedné verzi, napíše v `docker-compose.yml` místo `:latest` třeba `:1.0.0`.
 
 ### Licence
 Licence zatím není vybraná, všechna práva jsou vyhrazena.

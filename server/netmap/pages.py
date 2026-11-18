@@ -18,6 +18,7 @@ button{margin-top:16px;width:100%;padding:9px;border:0;border-radius:6px;backgro
 #lang{position:fixed;top:12px;right:12px;width:auto;margin:0;padding:4px 9px;background:var(--pn);color:var(--tx);border:1px solid var(--bd);font-size:13px}
 #msg{color:var(--er);font-size:13px;min-height:18px;margin-top:10px}
 code{font-size:13px}
+[hidden]{display:none!important}
 </style></head><body>
 <button id="lang" type="button" title="SWITCH">OTHER</button>
 BODY
@@ -33,7 +34,8 @@ document.getElementById('lang').onclick = () => {
 PT = {
     'cs': {
         'TITLE': 'Mapa sítě', 'OTHER': 'EN', 'SWITCH': 'English',
-        'user': 'Jméno', 'pass': 'Heslo', 'code': 'Kód z aplikace (jen se zapnutým 2FA)', 'go': 'Přihlásit',
+        'user': 'Jméno', 'pass': 'Heslo', 'code': 'Kód z aplikace (2FA)', 'go': 'Přihlásit',
+        'needcode': 'Zadej šestimístný kód z aplikace.',
         'wait': 'Moc pokusů, zkus to znovu za ${j.wait} s.', 'wrong': 'Špatné jméno, heslo nebo kód.',
         'server': 'Chyba serveru (',
         'setup1': 'Účet ještě není nastavený. Jednorázový kód najdeš v protokolu kontejneru '
@@ -44,7 +46,8 @@ PT = {
     },
     'en': {
         'TITLE': 'Network map', 'OTHER': 'CZ', 'SWITCH': 'Čeština',
-        'user': 'User name', 'pass': 'Password', 'code': 'Code from the app (only with 2FA on)', 'go': 'Sign in',
+        'user': 'User name', 'pass': 'Password', 'code': 'Code from the app (2FA)', 'go': 'Sign in',
+        'needcode': 'Enter the 6-digit code from your app.',
         'wait': 'Too many attempts, try again in ${j.wait} s.', 'wrong': 'Wrong user name, password or code.',
         'server': 'Server error (',
         'setup1': 'The account is not set up yet. The one-time code is in the container log '
@@ -56,26 +59,32 @@ PT = {
     },
 }
 
-# Pole pro kód 2FA je vidět vždy: server neprozradí, jestli je 2FA zapnuté ani jestli sedělo heslo.
+# Přihlášení ve dvou krocích: pole pro kód 2FA se ukáže, až server odpoví 'code' (jméno a heslo sedí).
 LOGIN = '''<form id="f">
 <h1>🖧 {TITLE}</h1>
 <label>{user}<input name="user" autocomplete="username" required autofocus></label>
 <label>{pass}<input name="pass" type="password" autocomplete="current-password" required></label>
-<label>{code}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+<label id="c" hidden>{code}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
 <button>{go}</button>
 <div id="msg"></div>
 </form>
 <script>
-const f = document.getElementById('f'), msg = document.getElementById('msg');
+const f = document.getElementById('f'), msg = document.getElementById('msg'), c = document.getElementById('c');
 f.onsubmit = async e => {
   e.preventDefault();
   msg.textContent = '';
   const b = Object.fromEntries(new FormData(f));
   const r = await fetch('api/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(b)});
   const j = await r.json().catch(() => ({}));
-  if (r.ok) location.reload();
-  else if (j.wait) msg.textContent = `{wait}`;
+  if (r.ok) return location.reload();
+  if (j.error == 'code') {
+    c.hidden = false;
+    f.code.required = true;
+    f.code.focus();
+    msg.textContent = '{needcode}';
+  } else if (j.wait) msg.textContent = `{wait}`;
   else msg.textContent = r.status == 401 ? '{wrong}' : '{server}' + r.status + ').';
+  if (!c.hidden) f.code.value = '';
 };
 </script>'''
 

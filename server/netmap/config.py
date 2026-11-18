@@ -50,12 +50,21 @@ NMAP = os.environ.get('NETMAP_NMAP', 'nmap')  # jiná cesta jen pro test (faleš
 SCAN_TIMEOUT = 300
 SCAN_MAX = 1024              # největší skenovaná síť (/22), ať se omylem neskenuje celé /8
 
+# ---------- verze a aktualizace ----------
+
+VERSION = os.environ.get('NETMAP_VERSION', 'dev')  # zapíše ho sestavení image (git describe: v1.2.3, příp. v1.2.3-4-gabc)
+UPDATE_CHECK = os.environ.get('NETMAP_UPDATE_CHECK', '1').lower() not in ('0', 'off', 'false', 'no')
+UPDATE_REPO = os.environ.get('NETMAP_UPDATE_REPO', 'Josefson92/netmap')  # vydání na GitHubu, ze kterého je image
+UPDATE_EVERY = 24 * 3600     # kontrola 1× denně
+UPDATE_RETRY = 3600          # po chybě (GitHub nedostupný) znovu za hodinu
+
 # ---------- jazyk ----------
 
 LANGS = ('cs', 'en')         # jazyky stránek a ukázky; editor posílá ruční volbu v cookie LANG_COOKIE
 LANG_COOKIE = 'netmapLang'
 FIRST = {'cs': 'Domov', 'en': 'Home'}  # první objekt (převod dat z doby před objekty jde vždy do „Domov“)
 DEMO_NAME = {'cs': 'Ukázka', 'en': 'Demo'}
+ISSUER = {'cs': 'Mapa sítě', 'en': 'Network map'}  # název účtu v aplikaci s kódy 2FA
 DEMO_DESC = {'cs': 'Fiktivní síť na vyzkoušení editoru', 'en': 'Fictional network to try out the editor'}
 
 

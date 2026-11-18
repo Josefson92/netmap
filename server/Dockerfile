@@ -16,6 +16,9 @@ COPY ukazka-en/ /app/ukazka-en/
 COPY server/netmap/ ./netmap/
 # editor je součástí image; vlastní verze jde podstrčit volume ./www (www/mapa.html má přednost)
 COPY mapa.html /app/mapa.html
+# verze z git describe (workflow image.yml), editor ji ukáže a server podle ní hlásí nové vydání
+ARG NETMAP_VERSION=dev
+ENV NETMAP_VERSION=$NETMAP_VERSION
 ENV PORT=8780 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 HEALTHCHECK --interval=60s --timeout=5s CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/api/health' % os.environ['PORT'])"
 ENTRYPOINT ["netmap-start"]

@@ -1,4 +1,5 @@
-"""Příkazová řádka: python -m netmap passwd | 2fa on | 2fa off | demo [cs|en].
+"""Příkazová řádka: python -m netmap passwd | 2fa on | 2fa off. Běžně se účet nastavuje v editoru
+(⋯ → 🔐 Účet), tohle je nouzová cesta: zapomenuté heslo, ztracený telefon s kódy.
 Nepotřebuje FastAPI (neimportuje api.py). Jazyk: NETMAP_LANG=cs|en, jinak podle LANG
 (cs/sk = čeština, jinak angličtina)."""
 
@@ -6,13 +7,11 @@ import getpass
 import os
 import sys
 
-from .auth import account_set, auth, totp_new, totp_step
-from .config import AUTH, CONFIG, DEMO, DEMO_NAME, FILES, LANGS, PW_MIN, lang_of
-from .objects import demo_new, obj_lock
-from .store import write_json
+from .auth import account_set, auth, totp_new, totp_set, totp_step, totp_url
+from .config import CONFIG, ISSUER, PW_MIN, lang_of
 
 CLI_LANG = lang_of(os.environ.get('NETMAP_LANG'), os.environ.get('LANG', '').split('.')[0].replace('_', '-'))
-USAGE = 'python -m netmap passwd | 2fa on | 2fa off | demo [cs|en]'
+USAGE = 'python -m netmap passwd | 2fa on | 2fa off'
 
 
 def tl(cs, en):
@@ -41,13 +40,11 @@ def cli_2fa(on):
     if not a:
         sys.exit(tl('Nejdřív nastav heslo: python -m netmap passwd', 'Set a password first: python -m netmap passwd'))
     if not on:
-        a.pop('totp', None)
-        write_json(AUTH, a)
+        totp_set(None)
         print(tl('2FA je vypnuté.', '2FA is off.'))
         return
     secret = totp_new()
-    issuer = tl('Mapa%20s%C3%ADt%C4%9B', 'Network%20map')
-    url = f'otpauth://totp/{issuer}:{a["user"]}?secret={secret}&issuer={issuer}'
+    url = totp_url(a['user'], secret, ISSUER[CLI_LANG])
     print(tl('Naskenuj QR kód v aplikaci (Google Authenticator, Aegis, 1Password…):\n',
              'Scan the QR code in an authenticator app (Google Authenticator, Aegis, 1Password…):\n'))
     try:
@@ -60,20 +57,11 @@ def cli_2fa(on):
     print(tl(f'\nNebo zadej ručně klíč: {secret}\nOdkaz: {url}\n', f'\nOr enter the key manually: {secret}\nLink: {url}\n'))
     for _ in range(3):
         if totp_step(secret, input(tl('Kód z aplikace: ', 'Code from the app: '))) is not None:
-            a['totp'] = secret
-            write_json(AUTH, a)
+            totp_set(secret)
             print(tl('2FA je zapnuté.', '2FA is on.'))
             return
         print(tl('Kód nesedí.', 'Wrong code.'))
     sys.exit(tl('2FA zůstává vypnuté.', '2FA stays off.'))
-
-
-def cli_demo(lang):
-    with obj_lock:
-        d = demo_new(lang)
-    if not d:
-        sys.exit(tl('Chybí ukázková síť: ', 'The demo network is missing: ') + str(DEMO / FILES['net']))
-    print(tl(f'Objekt „{DEMO_NAME[lang]}“ je založený (data/{d.name}/).', f'Object "{DEMO_NAME[lang]}" created (data/{d.name}/).'))
 
 
 def drop_root():
@@ -96,7 +84,5 @@ def main(argv=None):
         cli_passwd()
     elif cmd in (['2fa', 'on'], ['2fa', 'off']):
         cli_2fa(cmd[1] == 'on')
-    elif cmd[:1] == ['demo'] and len(cmd) <= 2 and (cmd[1:] or [CLI_LANG])[0] in LANGS:
-        cli_demo((cmd[1:] or [CLI_LANG])[0])
     else:
         sys.exit(tl('Použití: ', 'Usage: ') + USAGE)

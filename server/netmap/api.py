@@ -5,23 +5,28 @@ Spuštění: uvicorn netmap.api:app --host 0.0.0.0 --port 8780
 Data, zálohy a sken mají cestu /api/objects/{oid}/…. Staré cesty bez objektu (/api/data,
 /api/backups, /api/scan) platí pro objekt s NAS, aby fungoval i editor z doby před objekty."""
 
+import base64
+import io
 import json
 import shutil
 import threading
 from urllib.parse import urlsplit
 
+import qrcode
+import qrcode.image.svg
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from . import auth as A
 from .backups import backup_dir, backup_maybe, backups
-from .config import (COOKIE, EDITOR, FILES, LANG_COOKIE, LOGIN_BODY, MAX_BODY, META_BODY, PW_MIN, SESSION_DAYS, WWW,
-                     lang_of)
+from .config import (COOKIE, EDITOR, FILES, ISSUER, LANG_COOKIE, LOGIN_BODY, MAX_BODY, META_BODY, NAME_MAX, PW_MIN,
+                     SESSION_DAYS, WWW, lang_of)
 from .objects import (clean_meta, fresh_start, migrate, nas_obj, obj_delete, obj_dir, obj_info, obj_lock,
                       obj_meta, obj_new, obj_set, objects)
 from .pages import LOGIN_HTML, SETUP_HTML
 from .scan import scan_start, scan_state
 from .store import read_text, rev_of, write_atomic
+from .update import update_info, update_start
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 data_lock = threading.Lock()
@@ -143,6 +148,12 @@ def health():
     return {'app': 'netmap', 'ok': True}
 
 
+@app.get('/api/version')
+def version():
+    """Verze serveru a novější vydání na GitHubu (jen přihlášeným; health verzi neprozrazuje)."""
+    return update_info()
+
+
 @app.get('/')
 def index(req: Request):
     f = WWW / 'mapa.html'
@@ -175,7 +186,10 @@ async def login(req: Request):
         user, pw, code = str(b.get('user', '')), str(b.get('pass', '')), str(b.get('code') or '')
     except ValueError:
         return err(400, 'bad request')
-    if not A.login_ok(a, user, pw, code):
+    ok = A.login_check(a, user, pw, code)
+    if ok == 'code':  # heslo sedí, zapnuté 2FA: stránka ukáže pole pro kód
+        return err(401, 'code')
+    if not ok:
         A.fail(ip)
         w = A.wait_left(ip)
         return err(401, 'wrong', **({'wait': w} if w else {}))
@@ -211,7 +225,7 @@ async def setup(req: Request):
             A.fail(ip)
             w = A.wait_left(ip)
             return err(401, 'wrong', **({'wait': w} if w else {}))
-        if not user or len(user) > 60 or len(pw) < PW_MIN:
+        if not user or len(user) > NAME_MAX or len(pw) < PW_MIN:
             return err(400, 'short')
         A.account_set(user, pw)
         A.setup_end()
@@ -241,10 +255,104 @@ def logout(req: Request):
     return r
 
 
+# ---------- účet (okno 🔐 Účet v editoru) ----------
+# Každá změna chce současné heslo (špatné se počítá jako špatné přihlášení), vypnutí 2FA i platný kód.
+# Odpověď 403 (ne 401): editor by na 401 obnovil stránku a odhlásil se.
+
+
+@app.get('/api/account')
+def account_get():
+    a = A.auth()
+    return {'user': a['user'], 'totp': bool(a.get('totp')), 'min': PW_MIN}
+
+
+async def account_req(req):
+    """(účet, tělo požadavku), nebo (None, chybová odpověď), když nesedí heslo nebo se čeká."""
+    ip = client_ip(req)
+    w = A.wait_left(ip)
+    if w:
+        return None, err(429, 'wait', wait=w)
+    try:
+        b = await body_json(req, LOGIN_BODY)
+    except ValueError:
+        return None, err(400, 'bad request')
+    a = A.auth()
+    if not A.pw_check(str(b.get('pass', '')), a['hash']):
+        A.fail(ip)
+        w = A.wait_left(ip)
+        return None, err(403, 'wrong', **({'wait': w} if w else {}))
+    A.fail_reset(ip)
+    return a, b
+
+
+# změna jména a hesla: odhlásí všechna zařízení, tenhle prohlížeč dostane novou relaci
+@app.post('/api/account/password')
+async def account_password(req: Request):
+    a, b = await account_req(req)
+    if not a:
+        return b
+    user, new = str(b.get('user') or a['user']).strip(), str(b.get('new', ''))
+    if not user or len(user) > NAME_MAX or len(new) < PW_MIN:
+        return err(400, 'short')
+    A.account_set(user, new)
+    return signed_in(req)
+
+
+def qr_svg(text):
+    """QR kód jako data URL (SVG), editor ho ukáže v <img> (CSP povoluje data:)."""
+    buf = io.BytesIO()
+    qrcode.make(text, image_factory=qrcode.image.svg.SvgPathImage, border=2).save(buf)
+    return 'data:image/svg+xml;base64,' + base64.b64encode(buf.getvalue()).decode()
+
+
+# nový klíč 2FA k naskenování; zapne se až s prvním kódem (/on), do té doby ho server nikam neukládá
+@app.post('/api/account/2fa/new')
+async def account_2fa_new(req: Request):
+    a, b = await account_req(req)
+    if not a:
+        return b
+    if a.get('totp'):
+        return err(409, 'on')
+    secret = A.totp_new()
+    url = A.totp_url(a['user'], secret, ISSUER[req_lang(req)])
+    return {'secret': secret, 'url': url, 'qr': qr_svg(url)}
+
+
+@app.post('/api/account/2fa/on')
+async def account_2fa_on(req: Request):
+    a, b = await account_req(req)
+    if not a:
+        return b
+    secret = b.get('secret')
+    if a.get('totp'):
+        return err(409, 'on')
+    if not A.totp_valid(secret):
+        return err(400, 'bad request')
+    if not A.totp_use(a, secret, str(b.get('code', ''))):
+        return err(403, 'code')  # překlep v kódu: heslo sedělo, nepočítá se jako hádání
+    A.totp_set(secret)
+    return {'ok': True}
+
+
+@app.post('/api/account/2fa/off')
+async def account_2fa_off(req: Request):
+    a, b = await account_req(req)
+    if not a:
+        return b
+    if not a.get('totp'):
+        return {'ok': True}
+    if not A.totp_use(a, a['totp'], str(b.get('code', ''))):
+        A.fail(client_ip(req))  # kód k zapnutému 2FA se hádat nesmí
+        return err(403, 'code')
+    A.totp_set(None)
+    return {'ok': True}
+
+
 # ---------- objekty ----------
 
 migrate()
 setup_banner()
+update_start()
 
 
 def obj_of(oid):

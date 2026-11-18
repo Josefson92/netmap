@@ -3,11 +3,13 @@
 import base64
 import hashlib
 import hmac
+import re
 import secrets
 import struct
 import threading
 import time
 from collections import deque
+from urllib.parse import quote
 
 from .config import AUTH, FAIL_FORGET, FAIL_WAIT, FAILS_ALL, FAILS_FREE, SESSION_DAYS, SESSIONS
 from .store import read_json, write_json
@@ -62,6 +64,11 @@ def totp_new():
     return base64.b32encode(secrets.token_bytes(20)).decode().rstrip('=')
 
 
+def totp_valid(secret):
+    """Klíč ve tvaru z totp_new (32 znaků base32)."""
+    return isinstance(secret, str) and re.fullmatch(r'[A-Z2-7]{32}', secret) is not None
+
+
 # ---------- účet a přihlášení ----------
 
 _used_steps = {}  # poslední použitý krok TOTP (kód nejde použít dvakrát)
@@ -71,16 +78,43 @@ def auth():
     return read_json(AUTH, None)
 
 
-def login_ok(a, user, pw, code):
-    """Jméno, heslo a (se zapnutým 2FA) kód najednou. Odpověď je jen ano/ne, takže z ní nejde
-    poznat, která část byla špatně; scrypt se počítá vždy (žádný rozdíl v čase)."""
+def login_check(a, user, pw, code):
+    """Přihlášení: 'ok', 'code' (jméno a heslo sedí, se zapnutým 2FA chybí kód) nebo '' (špatně).
+    Ze špatné odpovědi nejde poznat, jestli bylo špatně jméno, heslo, nebo kód; scrypt se počítá vždy
+    (žádný rozdíl v čase). 'code' prozradí, že heslo sedělo: přihlášení má dva kroky."""
     ok = hmac.compare_digest(user.encode(), a['user'].encode()) & pw_check(pw, a['hash'])
-    if a.get('totp'):
-        s = totp_step(a['totp'], code)
-        ok = ok and s is not None and s > _used_steps.get(a['user'], -1)
-        if ok:
-            _used_steps[a['user']] = s
-    return ok
+    if not ok:
+        return ''
+    if not a.get('totp'):
+        return 'ok'
+    if not code:
+        return 'code'
+    return 'ok' if totp_use(a, a['totp'], code) else ''
+
+
+def totp_use(a, secret, code):
+    """Kód platí a ještě nebyl použitý (stejný kód nejde použít dvakrát)."""
+    s = totp_step(secret, code)
+    if s is None or s <= _used_steps.get(a['user'], -1):
+        return False
+    _used_steps[a['user']] = s
+    return True
+
+
+def totp_url(user, secret, issuer):
+    """Odkaz otpauth:// pro aplikaci s kódy (i v QR kódu)."""
+    i = quote(issuer)
+    return f'otpauth://totp/{i}:{quote(user)}?secret={secret}&issuer={i}'
+
+
+def totp_set(secret):
+    """Zapne 2FA s tímto klíčem, None = vypne."""
+    a = auth()
+    if secret:
+        a['totp'] = secret
+    else:
+        a.pop('totp', None)
+    write_json(AUTH, a)
 
 
 # ---------- první nastavení účtu ----------
@@ -109,7 +143,7 @@ def setup_ok(code):
 
 
 def account_set(user, pw):
-    """Jméno a heslo; změna odhlásí všechny relace. 2FA zůstane, jak bylo."""
+    """Jméno a heslo; změna odhlásí všechny relace (editor si pak vezme novou). 2FA zůstane, jak bylo."""
     a = auth() or {}
     a.update(user=user, hash=pw_hash(pw))
     write_json(AUTH, a)

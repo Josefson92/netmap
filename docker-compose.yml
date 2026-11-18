@@ -1,8 +1,9 @@
 # Mapa domácí sítě na NAS (docs/nas.md). Stačí tento jeden soubor: image se stáhne hotový
-# a složky data/ a config/ vzniknou vedle něj samy při prvním startu.
+# a složky data/ a config/ vzniknou vedle něj při prvním startu. Na Synology je vytvoř
+# předem ve File Station (Container Manager chybějící složky nevytvoří).
 services:
   netmap:
-    image: ghcr.io/josefson92/netmap:latest
+    image: ghcr.io/josefson92/netmap:latest   # nebo připnutá verze, např. :1.0.0
     # vlastní sestavení z kopie repozitáře: místo image: dej
     # build: {context: ., dockerfile: server/Dockerfile}
     container_name: netmap
@@ -16,7 +17,8 @@ services:
       PORT: 8780
       TZ: Europe/Prague
       # SCAN_NETS: 192.168.1.0/24   # co skenovat; bez toho síť serveru (/24)
-      # NETMAP_LANG: cs             # jazyk příkazů v terminálu (passwd, 2fa, demo); bez toho angličtina
+      # NETMAP_LANG: cs             # jazyk nouzových příkazů v terminálu (passwd, 2fa); bez toho angličtina
+      # NETMAP_UPDATE_CHECK: 0      # nekontrolovat 1× denně nové vydání na GitHubu (editor jinak upozorní)
       # PUID: 1000                  # uživatel serveru; bez toho ho start najde sám (kdo smí do data/ zapisovat)
       # PGID: 1000
     volumes:

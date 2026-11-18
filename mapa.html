@@ -41,6 +41,8 @@ button:hover,.btn:hover{border-color:var(--ac)}
 button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 header button:disabled{opacity:.4;cursor:not-allowed;border-color:var(--bd)}
 button.mini{padding:0 6px;font-size:11px;text-transform:none}
+a.btn{text-decoration:none}
+footer a{color:var(--ac)}
 button.add{margin-top:4px;font-size:12px}
 h3,h4{margin:6px 0}
 h4{color:var(--mu);font-size:11px;text-transform:uppercase;margin-top:12px}
@@ -295,21 +297,26 @@ body.objs>:not(#objs):not(dialog){visibility:hidden}  /* ne display:none: náhle
 .obD{color:var(--tx);white-space:pre-wrap;overflow-wrap:anywhere}
 .obI{color:var(--mu);font-size:12px}
 .obAdd{min-height:120px;justify-content:center;align-items:center;font-size:15px;color:var(--mu);border-style:dashed}
-#obDlg,#exDlg{width:min(420px,calc(100vw - 32px));border:1px solid var(--bd);border-radius:10px;background:var(--pn);color:var(--tx);box-shadow:0 12px 40px rgba(0,0,0,.3)}
-#obDlg::backdrop,#exDlg::backdrop{background:rgba(0,0,0,.4)}
-#obDlg h3,#exDlg h3{margin:0 0 10px;font-size:16px}
-#obDlg label,#exDlg label{display:block;margin:8px 0;color:var(--mu)}
-#obDlg input:not([type]),#obDlg textarea,#exDlg input:not([type]){display:block;width:100%;margin-top:3px}
+#obDlg,#exDlg,#acDlg{width:min(420px,calc(100vw - 32px));border:1px solid var(--bd);border-radius:10px;background:var(--pn);color:var(--tx);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+#obDlg::backdrop,#exDlg::backdrop,#acDlg::backdrop{background:rgba(0,0,0,.4)}
+#obDlg h3,#exDlg h3,#acDlg h3{margin:0 0 10px;font-size:16px}
+#obDlg label,#exDlg label,#acDlg label{display:block;margin:8px 0;color:var(--mu)}
+#obDlg input:not([type]),#obDlg textarea,#exDlg input:not([type]),#acDlg input{display:block;width:100%;margin-top:3px}
 #obDlg label.ck,#obDlg label.btn,#exDlg label.ck{color:var(--tx)}
-#exDlg h4{margin:14px 0 4px;font-size:12px;color:var(--mu)}
-#exDlg .hint{margin:0}
+#exDlg h4,#acDlg h4{margin:14px 0 4px;font-size:12px;color:var(--mu)}
+#exDlg .hint,#acDlg .hint{margin:0}
+#acDlg .obB{margin-top:6px}
+.acQ{display:flex;gap:12px;align-items:center;margin:8px 0}
+.acQ img{width:150px;height:150px;flex:none;background:#fff;padding:4px;border-radius:6px}
+.acQ code{font-size:13px;overflow-wrap:anywhere}
 /* export HTML jen na prohlížení (body.view): bez přidávání zařízení, pole v panelu jdou jen číst */
 body.view #pal button[data-t],body.view #pal h4:first-child{display:none}
 body.view #props select:disabled,body.view #props input:disabled,body.view #fwB select:disabled,body.view #fwB input:disabled{opacity:1;color:var(--tx)}
 #bEdit{font-weight:600}
 #obDlg label.btn{display:inline-block;margin:0 0 6px}
 .obB{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
-#obE{color:#c2410c;min-height:1em}
+#obE,#acE{color:#c2410c;min-height:1em}
+#acE.ok{color:#16a34a}
 #bkB{flex:1;display:flex;min-height:0}
 #bkL{width:250px;flex:none;overflow:auto;border-right:1px solid var(--bd);padding:6px}
 #bkL button{display:flex;width:100%;justify-content:space-between;gap:6px;margin-bottom:2px;border-color:transparent;background:none;text-align:left}
@@ -376,6 +383,7 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
    <button id="bMd" title="Zkopíruje textový přehled sítě">📋 Kopírovat přehled (MD)</button>
    <button id="bScan" title="NAS proskenuje síť a porovná nalezená zařízení s mapou" hidden>🔍 Sken sítě…</button>
    <button id="bBk" title="Zálohy dat na NAS: porovnání se současnou verzí a obnova" hidden>🕘 Zálohy…</button>
+   <button id="bAcc" title="Heslo a dvoufázové ověření (2FA) účtu na NAS" hidden>🔐 Účet…</button>
    <button id="bOut" title="Odhlásí se ze serveru na NAS" hidden>🚪 Odhlásit</button>
   </div></details>
  </span>
@@ -415,9 +423,9 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
 <button id="mbPal" class="fab" title="Přidat zařízení a legenda spojů">＋</button>
 <button id="mbProps" class="fab" title="Panel vlastností">ⓘ</button>
 <button id="bWide" title="Rozšířit panel ke středu"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
-<footer><span id="stAct" hidden>⚠ Na NAS je novější verze: <button id="bNasLoad" class="mini">Načíst z NAS</button> <button id="bNasMine" class="mini">Přepsat NAS mou verzí</button> · </span><span id="st"></span></footer>
+<footer><span id="stUp" hidden>⬆ <span id="stUpT"></span> <a id="aUp" target="_blank" rel="noopener" title="Poznámky k vydání a postup aktualizace na GitHubu">Co je nové</a> <button id="bUpX" class="mini" title="Skrýt do další verze">✕</button> · </span><span id="stOld" hidden>⚠ <span id="stOldT"></span> <button id="bOldUp" class="mini">Nahrát na NAS</button> <button id="bOldDel" class="mini">Zahodit</button> · </span><span id="stAct" hidden>⚠ Na NAS je novější verze: <button id="bNasLoad" class="mini">Načíst z NAS</button> <button id="bNasMine" class="mini">Přepsat NAS mou verzí</button> · </span><span id="st"></span></footer>
 <div id="objs" hidden>
- <div class="obh"><b>🗺️ Mapa sítě · objekty</b><span class="sp"></span><button id="obLang"></button><button id="obTheme"></button><button id="obOut" title="Odhlásí se ze serveru na NAS">🚪 Odhlásit</button></div>
+ <div class="obh"><b>🗺️ Mapa sítě · objekty</b><span class="sp"></span><button id="obLang"></button><button id="obTheme"></button><a id="obUp" class="btn" target="_blank" rel="noopener" title="Poznámky k vydání a postup aktualizace na GitHubu" hidden></a><button id="obAcc" title="Heslo a dvoufázové ověření (2FA) účtu na NAS">🔐 Účet</button><button id="obOut" title="Odhlásí se ze serveru na NAS">🚪 Odhlásit</button></div>
  <div id="obL"><span class="hint">Načítám…</span></div>
 </div>
 <dialog id="obDlg"><form id="obF">
@@ -438,6 +446,21 @@ body.view #props select:disabled,body.view #props input:disabled,body.view #fwB 
  <label class="ck"><input type="checkbox" name="note"> poznámky u zařízení a spojů</label>
  <label class="ck"><input type="checkbox" name="mac"> MAC adresy (bez nich se zakryjí i v poznámkách)</label>
  <div class="obB"><button type="button" id="exNo">Zrušit</button><button class="on">⬇ Stáhnout HTML</button></div>
+</form></dialog>
+<dialog id="acDlg"><form id="acF">
+ <h3>🔐 Účet na NAS</h3>
+ <p class="hint">Každá změna chce současné heslo.</p>
+ <label>Současné heslo<input name="pass" type="password" autocomplete="current-password"></label>
+ <h4>Jméno a heslo</h4>
+ <label>Jméno<input name="user" autocomplete="username" maxlength="60"></label>
+ <label>Nové heslo (<span id="acPm"></span>)<input name="new" type="password" autocomplete="new-password"></label>
+ <label>Nové heslo znovu<input name="new2" type="password" autocomplete="new-password"></label>
+ <div class="obB"><button type="button" data-ac="pw" title="Ostatní zařízení se odhlásí, tenhle prohlížeč zůstane přihlášený">Změnit heslo</button></div>
+ <h4>Dvoufázové ověření (2FA)</h4>
+ <div id="acT"></div>
+ <div id="acE"></div>
+ <p class="hint" id="acV"></p>
+ <div class="obB"><button type="button" id="acNo">Zavřít</button></div>
 </form></dialog>
 <dialog id="scDlg">
  <div class="fwh"><b>🔍 Sken sítě</b><span class="seg" id="scTabs"></span><span class="sp"></span><button id="scGo" title="NAS proskenuje síť (nmap), trvá to asi půl minuty">▶ Skenovat</button><button id="scX" title="Zavřít (Esc)">✕</button></div>
@@ -674,6 +697,8 @@ const EN = {
   "⚠ Na NAS je novější verze:": "⚠ The NAS has a newer version:",
   "Načíst z NAS": "Load from NAS",
   "Přepsat NAS mou verzí": "Overwrite NAS with my version",
+  "Nahrát na NAS": "Upload to NAS",
+  "Zahodit": "Discard",
   "Klikni nebo přetáhni na plochu": "Click or drag onto the canvas",
   "Zařízení": "Devices",
   "Spoje": "Links",
@@ -1122,6 +1147,43 @@ const EN = {
   "Na NAS se přesune do koše data/_deleted/, vrátit ho jde jen ručně.": "On the NAS it is moved to the bin data/_deleted/, it can only be restored manually.",
   "Smazání se nepovedlo: server {s}": "Deleting failed: server {s}",
   "Objekt „{id}“ na NAS není (je smazaný?).": "Site “{id}” is not on the NAS (deleted?).",
+  // ---- účet na NAS ----
+  "🔐 Účet…": "🔐 Account…",
+  "🔐 Účet": "🔐 Account",
+  "Heslo a dvoufázové ověření (2FA) účtu na NAS": "Password and two-factor authentication (2FA) of the NAS account",
+  "🔐 Účet na NAS": "🔐 NAS account",
+  "Každá změna chce současné heslo.": "Every change needs the current password.",
+  "Současné heslo": "Current password",
+  "Jméno a heslo": "User name and password",
+  "Jméno": "User name",
+  "Nové heslo (": "New password (",
+  "Nové heslo znovu": "New password again",
+  "Ostatní zařízení se odhlásí, tenhle prohlížeč zůstane přihlášený": "Other devices are signed out, this browser stays signed in",
+  "Změnit heslo": "Change password",
+  "Dvoufázové ověření (2FA)": "Two-factor authentication (2FA)",
+  "současné heslo nesedí": "the current password is wrong",
+  "kód z aplikace nesedí": "the code from the app is wrong",
+  "nové heslo je moc krátké": "the new password is too short",
+  "2FA už je zapnuté": "2FA is already on",
+  "Účet nejde načíst: {e}": "Cannot load the account: {e}",
+  "aspoň {n} znaků": "at least {n} characters",
+  "Kód z aplikace": "Code from the app",
+  "2FA je zapnuté: přihlášení chce i kód z aplikace.": "2FA is on: signing in also needs the code from the app.",
+  "Vypnout 2FA": "Turn off 2FA",
+  "Naskenuj QR kód v aplikaci s kódy (Google Authenticator, Aegis, 1Password…) a opiš z ní první kód. Bez fotoaparátu zadej klíč ručně.": "Scan the QR code in an authenticator app (Google Authenticator, Aegis, 1Password…) and type in its first code. Without a camera, enter the key manually.",
+  "Potvrdit a zapnout": "Confirm and turn on",
+  "2FA je vypnuté. Se zapnutým chce přihlášení navíc šestimístný kód z aplikace v telefonu.": "2FA is off. When on, signing in also needs a 6-digit code from an app on your phone.",
+  "Zapnout 2FA…": "Turn on 2FA…",
+  "moc pokusů, zkus to znovu za {s} s": "too many attempts, try again in {s} s",
+  "napiš současné heslo": "enter the current password",
+  "napiš jméno": "enter the user name",
+  "nové heslo musí mít aspoň {n} znaků": "the new password must have at least {n} characters",
+  "nová hesla se neshodují": "the new passwords do not match",
+  "napiš šestimístný kód z aplikace": "enter the 6-digit code from the app",
+  "Vypnout 2FA? Přihlášení pak bude chtít jen jméno a heslo.": "Turn off 2FA? Signing in will then need only the user name and password.",
+  "heslo je změněné, ostatní zařízení jsou odhlášená": "the password is changed, other devices are signed out",
+  "2FA je zapnuté": "2FA is on",
+  "2FA je vypnuté": "2FA is off",
   // ---- stavový řádek a hlášky ----
   "{n} zařízení": "{n} devices",
   "({n} skryto)": "({n} hidden)",
@@ -1138,6 +1200,11 @@ const EN = {
   "prohlížeč": "browser",
   "na NAS je novější verze": "the NAS has a newer version",
   "Zahodit změny z tohoto prohlížeče a načíst verzi z NAS?": "Discard the changes from this browser and load the version from the NAS?",
+  "V prohlížeči je starší mapa tohoto objektu ({n} zařízení), která na NAS není:": "This browser has an older map of this site ({n} devices) that is not on the NAS:",
+  "Nahradit současnou mapu starší mapou z prohlížeče?": "Replace the current map with the older map from this browser?",
+  "Jde to vrátit Ctrl+Z.": "Ctrl+Z undoes it.",
+  "Zahodit starší mapu z prohlížeče? Nepůjde obnovit.": "Discard the older map from this browser? It cannot be restored.",
+  "nahrána starší mapa z prohlížeče": "older map from this browser uploaded",
   "neuloženo…": "not saved…",
   "uloženo jen v prohlížeči {t}": "saved only in the browser {t}",
   "uloženo do „{n}“": "saved to “{n}”",
@@ -1211,6 +1278,15 @@ const EN = {
   "porty: 1,2,4 · 5-8 · WAN · SFP1": "ports: 1,2,4 · 5-8 · WAN · SFP1",
   "rychl.": "speed",
   "bez PoE": "no PoE",
+  "Poznámky k vydání a postup aktualizace na GitHubu": "Release notes and how to update, on GitHub",
+  "Co je nové": "What's new",
+  "Skrýt do další verze": "Hide until the next version",
+  "Je dostupná verze {v} (máš {m})": "Version {v} is available (you have {m})",
+  "kontrola nových verzí je vypnutá": "update check is off",
+  "je dostupná verze {v}": "version {v} is available",
+  "je aktuální": "up to date",
+  "nové verze se ještě nekontrolovaly": "not checked for updates yet",
+  "Verze serveru: {v}": "Server version: {v}",
 };
 </script>
 
@@ -1482,7 +1558,7 @@ const SRC0 = (() => {
 })();
 let viewOnly = !!EMB;
 const lsK = (k, o = OID || (EMB ? '~html' : '')) => o ? k + '@' + o : k;
-const OBJ_KEYS = ['netmap', 'netmapRev', 'netmapDirty', 'netmapBase', 'netmapVl', 'netmapAr'];
+const OBJ_KEYS = ['netmap', 'netmapRev', 'netmapDirty', 'netmapBase', 'netmapOld', 'netmapVl', 'netmapAr'];
 
 let D = {v: 3, devices: [], links: [], areas: []}, PT = {};
 let VS = {topo: {x: 0, y: 0, k: 1}}, P = PT, V = VS.topo;
@@ -2857,6 +2933,9 @@ function devRing(d) {
 function showStatus() {
   const hidden = D.devices.length - VIS.size;
   $('#stAct').hidden = !store?.conflict;
+  const old = store?.http && lsGet(lsK('netmapOld'), null);
+  $('#stOld').hidden = !old;
+  if (old) $('#stOldT').textContent = tr('V prohlížeči je starší mapa tohoto objektu ({n} zařízení), která na NAS není:', {n: old.n});
   $('#st').textContent = [tr('{n} zařízení', {n: D.devices.length}) + (hidden > 0 ? ' ' + tr('({n} skryto)', {n: hidden}) : '') + (DIM.size ? ' ' + tr('({n} ztlumeno)', {n: DIM.size}) : ''),
     tr('{n} spojů', {n: D.links.length}), D.areas.length && tr('{n} prostorů', {n: D.areas.length}), saved].filter(Boolean).join(' · ')
     + '   |   ' + (viewOnly ? '👁 ' + tr('jen prohlížení: klikni na zařízení nebo spoj · F přizpůsobit · kolečko = zoom · ✎ Upravit odemkne')
@@ -3875,6 +3954,126 @@ function onBkClick(e) {
   }
 }
 
+// ---------- účet na NAS: heslo a 2FA (docs/nas.md) ----------
+// Okno ⋯ → 🔐 Účet (i v přehledu objektů). Každá změna chce současné heslo. Nový klíč 2FA (acNew) server
+// nikam neukládá, zapne se až s prvním kódem z aplikace. Změna hesla odhlásí ostatní zařízení, tenhle
+// prohlížeč dostane novou relaci. Chyby vrací server jako 403 (401 = relace vypršela, obnovit stránku).
+const AC_ERR = {
+  wrong: trK('současné heslo nesedí'),
+  code: trK('kód z aplikace nesedí'),
+  short: trK('nové heslo je moc krátké'),
+  on: trK('2FA už je zapnuté'),
+};
+let acI = null;    // {user, totp, min} ze serveru
+let acNew = null;  // rozpracovaný klíč 2FA {secret, url, qr}
+async function acOpen() {
+  const f = $('#acF');
+  try {
+    const r = await fetch('api/account', {cache: 'no-store'});
+    if (r.status == 401) return location.reload();
+    if (!r.ok) throw new Error('server ' + r.status);
+    acI = await r.json();
+  } catch (x) {
+    return alert(tr('Účet nejde načíst: {e}', {e: x.message}));
+  }
+  f.reset();
+  f.user.value = acI.user;
+  acNew = null;
+  acMsg('');
+  acRender();
+  $('#acV').textContent = upLine();
+  $('#acDlg').showModal();
+  f.pass.focus();
+}
+function acMsg(t, ok) {
+  $('#acE').textContent = t;
+  $('#acE').classList.toggle('ok', !!ok);
+}
+function acRender() {
+  $('#acPm').textContent = tr('aspoň {n} znaků', {n: acI.min});
+  const code = `<label>${tr('Kód z aplikace')}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>`;
+  let h;
+  if (acI.totp) {
+    h = `<p class="hint">✅ ${tr('2FA je zapnuté: přihlášení chce i kód z aplikace.')}</p>${code}`
+      + `<div class="obB"><button type="button" data-ac="off">${tr('Vypnout 2FA')}</button></div>`;
+  } else if (acNew) {
+    h = `<p class="hint">${tr('Naskenuj QR kód v aplikaci s kódy (Google Authenticator, Aegis, 1Password…) a opiš z ní první kód. Bez fotoaparátu zadej klíč ručně.')}</p>`
+      + `<div class="acQ"><img src="${esc(acNew.qr)}" alt="QR"><code title="${esc(acNew.url)}">${esc(acNew.secret.match(/.{1,4}/g).join(' '))}</code></div>${code}`
+      + `<div class="obB"><button type="button" data-ac="x">${tr('Zrušit')}</button><button type="button" class="on" data-ac="on">${tr('Potvrdit a zapnout')}</button></div>`;
+  } else {
+    h = `<p class="hint">${tr('2FA je vypnuté. Se zapnutým chce přihlášení navíc šestimístný kód z aplikace v telefonu.')}</p>`
+      + `<div class="obB"><button type="button" data-ac="new">${tr('Zapnout 2FA…')}</button></div>`;
+  }
+  $('#acT').innerHTML = h;
+}
+async function acPost(path, b) {
+  const r = await fetch('api/account/' + path, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({pass: $('#acF').pass.value, ...b}),
+  });
+  if (r.status == 401) location.reload();
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) return j;
+  if (j.wait) throw new Error(tr('moc pokusů, zkus to znovu za {s} s', {s: j.wait}));
+  throw new Error(AC_ERR[j.error] ? tr(AC_ERR[j.error]) : 'server ' + r.status);
+}
+// kontrola polí před odesláním: text chyby, nebo ''
+function acCheck(a) {
+  const f = $('#acF');
+  if (a == 'x') return '';
+  if (!f.pass.value) return tr('napiš současné heslo');
+  if (a == 'pw' && !f.user.value.trim()) return tr('napiš jméno');
+  if (a == 'pw' && f.new.value.length < acI.min) return tr('nové heslo musí mít aspoň {n} znaků', {n: acI.min});
+  if (a == 'pw' && f.new.value != f.new2.value) return tr('nová hesla se neshodují');
+  if ((a == 'on' || a == 'off') && !/^\d{6}$/.test(f.code.value.replace(/\s/g, ''))) return tr('napiš šestimístný kód z aplikace');
+  return '';
+}
+async function onAcClick(e) {
+  const b = e.target.closest('[data-ac]');
+  if (!b) return;
+  const f = $('#acF'), a = b.dataset.ac, bad = acCheck(a);
+  if (bad) {
+    acMsg('⚠ ' + bad);
+    return (!f.pass.value ? f.pass : a == 'pw' ? f.new : f.code).focus();
+  }
+  if (a == 'off' && !confirm(tr('Vypnout 2FA? Přihlášení pak bude chtít jen jméno a heslo.'))) return;
+  acMsg('');
+  b.disabled = true;
+  try {
+    if (a == 'pw') {
+      await acPost('password', {user: f.user.value.trim(), new: f.new.value});
+      acI.user = f.user.value.trim();
+      f.pass.value = f.new.value = f.new2.value = '';
+      acMsg('✓ ' + tr('heslo je změněné, ostatní zařízení jsou odhlášená'), 1);
+    } else if (a == 'new') {
+      acNew = await acPost('2fa/new');
+      acRender();
+      f.code.focus();
+    } else if (a == 'x') {
+      acNew = null;
+      acRender();
+    } else {
+      await acPost('2fa/' + a, {secret: acNew?.secret, code: f.code.value.replace(/\s/g, '')});
+      acNew = null;
+      acI.totp = a == 'on';
+      acRender();
+      acMsg('✓ ' + (a == 'on' ? tr('2FA je zapnuté') : tr('2FA je vypnuté')), 1);
+    }
+  } catch (x) {
+    acMsg('⚠ ' + x.message);
+  }
+  b.disabled = false;
+}
+// Enter v poli spustí jeho akci (formulář se neodesílá)
+function onAcKey(e) {
+  if (e.key != 'Enter' || e.target.tagName != 'INPUT') return;
+  e.preventDefault();
+  const n = e.target.name, a = n == 'code' ? (acI.totp ? 'off' : 'on') : n == 'pass' ? '' : 'pw';
+  if (a) $(`#acDlg [data-ac=${a}]`)?.click();
+}
+
 // ---------- prostory: strom bez geometrie ----------
 // D.areas = [{id, n, k, par, fc}] v network.json: k = druh z AK (budova, podlaží, místnost, venku), par = id nadřazeného
 // prostoru (bez par = nejvyšší úroveň), pořadí v poli = pořadí mezi sourozenci. Patro je prostor druhu flr (k: 'flr'),
@@ -4414,7 +4613,7 @@ function onKeyDown(e) {
   const k = e.key.toLowerCase();
   if (k == 'escape') closeMenus();
   if (e.ctrlKey && k == 's') { e.preventDefault(); save(); return; }
-  if ($('#fwDlg').open || $('#scDlg').open || $('#bkDlg').open || $('#arDlg').open || $('#exDlg').open) {  // okno firewallu / skenu / záloh / prostorů / exportu: jen Ctrl+Z mimo pole (Esc zavře okno samo), mapa nereaguje
+  if ($('#fwDlg').open || $('#scDlg').open || $('#bkDlg').open || $('#arDlg').open || $('#exDlg').open || $('#acDlg').open) {  // okno firewallu / skenu / záloh / prostorů / exportu / účtu: jen Ctrl+Z mimo pole (Esc zavře okno samo), mapa nereaguje
     if (e.ctrlKey && k == 'z' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); doUndo(); }
     return;
   }
@@ -5184,6 +5383,44 @@ function stHttp(base, name = 'NAS') {
   };
   return st;
 }
+// ---------- verze serveru a nové vydání ----------
+// Server se 1× denně zeptá GitHubu na poslední vydání (api/version), editor jen upozorní:
+// stavový řádek, přehled objektů a okno účtu. ✕ upozornění skryje do další verze (netmapUpX).
+let upI = null;  // {version, check, at, latest, url} ze serveru
+async function upLoad() {
+  try {
+    const r = await fetch('api/version', {cache: 'no-store'});
+    if (r.ok) upI = await r.json();
+  } catch {}
+  upShow();
+}
+// novější vydání, které uživatel neskryl
+const upNew = () => !!upI?.latest && lsGet('netmapUpX', '') != upI.latest;
+function upShow() {
+  const n = upNew();
+  $('#stUp').hidden = !n;
+  $('#obUp').hidden = !n;
+  if (!n) return;
+  const t = tr('Je dostupná verze {v} (máš {m})', {v: upI.latest, m: upI.version});
+  const url = /^https:\/\/github\.com\//.test(upI.url) ? upI.url : '#';
+  $('#stUpT').textContent = t + ':';
+  $('#aUp').href = url;
+  $('#obUp').textContent = '⬆ ' + t;
+  $('#obUp').href = url;
+}
+function upHide() {
+  lsSet('netmapUpX', upI.latest);
+  upShow();
+}
+// řádek do okna účtu
+function upLine() {
+  if (!upI) return '';
+  const st = !upI.check ? tr('kontrola nových verzí je vypnutá')
+    : upI.latest ? tr('je dostupná verze {v}', {v: upI.latest})
+    : upI.at ? tr('je aktuální')
+    : tr('nové verze se ještě nekontrolovaly');
+  return tr('Verze serveru: {v}', {v: upI.version}) + ' · ' + st;
+}
 // zjistí, jestli stránka běží ze serveru na NAS
 async function nasFound() {
   if (!location.protocol.startsWith('http')) return false;
@@ -5483,11 +5720,18 @@ function load(net, lay) {
   undo = [];
   sel = null;
 }
+// nová mapa začíná Internetem
+function inetAdd() {
+  const r = cv.getBoundingClientRect();
+  D.devices.push({id: 'internet1', t: 'internet', n: 'Internet'});
+  PT.internet1 = [g10(r.width / 2), 100];
+}
 // načtení z hlavního úložiště (když v něm data jsou) a hned zápis zpět, ať jsou soubory úplné.
 // NAS: když v prohlížeči zůstaly neuložené změny (netmapDirty), zůstanou a save je pošle s původní rev.
 async function loadStore() {
   const f = await store.get();
-  const keep = store.http && lsGet(lsK('netmapDirty'), 0);
+  const orphan = store.http && !f && nasOrphan();
+  const keep = store.http && !orphan && lsGet(lsK('netmapDirty'), 0);
   // NAS: pohled (posun, přiblížení) zůstane z tohoto zařízení, když tu už nějaký je
   if (f && !keep) load(f.net, store.http && lsGet(lsK('netmap'), null)?.lay ? withMyView(f.lay) : f.lay);
   if (store.http && !keep) {
@@ -5498,6 +5742,41 @@ async function loadStore() {
   render();
   renderProps();
   save();
+}
+// NAS data objektu nemá (nový server, smazaná složka), ale v prohlížeči zůstala mapa z dřívějška:
+// nezobrazí se jako uložená ani se sama nenahraje, čeká v netmapOld na volbu ve stavovém řádku (oldUp / oldDel).
+// Výjimka: první změny nového objektu, které se ještě nepodařilo poslat (netmapDirty bez rev), se pošlou.
+function nasOrphan() {
+  const s = lsGet(lsK('netmap'), null);
+  if (!s?.net || lsGet(lsK('netmapDirty'), 0) && !store.rev) return false;
+  let n = 0;
+  try { n = JSON.parse(s.net).devices?.length || 0; } catch {}
+  if (n > 1) lsSet(lsK('netmapOld'), {...s, n});  // samotný Internet z prázdné mapy nestojí za nabídku
+  lsSet(lsK('netmapBase'), null);
+  lsSet(lsK('netmapDirty'), 0);
+  store.setRev(null);
+  load('{"devices":[]}', null);
+  inetAdd();
+  return true;
+}
+async function oldUp() {
+  const o = lsGet(lsK('netmapOld'), null);
+  if (!o) return;
+  if (D.devices.length > 1 && !confirm(tr('Nahradit současnou mapu starší mapou z prohlížeče?') + '\n' + tr('Jde to vrátit Ctrl+Z.'))) return;
+  const u = undo, cur = JSON.stringify([D, PT, WT]);
+  load(o.net, o.lay);
+  undo = [...u, cur];  // load undo maže
+  lsSet(lsK('netmapOld'), null);
+  changed(1);
+  save();
+  await chain;
+  saved += ' · ' + tr('nahrána starší mapa z prohlížeče');
+  showStatus();
+}
+function oldDel() {
+  if (!confirm(tr('Zahodit starší mapu z prohlížeče? Nepůjde obnovit.'))) return;
+  lsSet(lsK('netmapOld'), null);
+  showStatus();
 }
 function updDir() {
   $('#bDir').textContent = store?.http ? '🖧 NAS' : store ? `📁 ${store.name}` : pendDir ? '🔗 ' + tr('Připojit „{d}“', {d: pendDir.name}) : '📁 ' + tr('Vybrat složku');
@@ -5800,6 +6079,11 @@ $('#exNo').onclick = () => $('#exDlg').close();
 $('#bEdit').onclick = viewEdit;
 addEventListener('beforeunload', e => { if (embDirty && !store) e.preventDefault(); });
 $('#bOut').onclick = logout;
+$('#bAcc').onclick = acOpen;
+$('#acF').addEventListener('submit', e => e.preventDefault());
+$('#acF').addEventListener('keydown', onAcKey);
+$('#acDlg').addEventListener('click', onAcClick);
+$('#acNo').onclick = () => $('#acDlg').close();
 $('#bObjs').onclick = obBack;
 // přehled objektů
 $('#obL').addEventListener('click', onObClick);
@@ -5817,12 +6101,16 @@ $('#obImX').onclick = () => {
 $('#obTheme').onclick = nextTheme;
 $('#obLang').onclick = nextLang;
 $('#obOut').onclick = logout;
+$('#obAcc').onclick = acOpen;
+$('#bUpX').onclick = upHide;
 $('#bNasLoad').onclick = nasLoad;
 // NAS: cizí změny při návratu do okna a každých 30 s
 addEventListener('focus', nasPull);
 document.addEventListener('visibilitychange', nasPull);
 setInterval(nasPull, 30000);
 $('#bNasMine').onclick = nasMine;
+$('#bOldUp').onclick = oldUp;
+$('#bOldDel').onclick = oldDel;
 $('#bMd').onclick = async () => { await navigator.clipboard.writeText(md()); saved = tr('přehled zkopírován do schránky'); showStatus(); };
 $('#bAr').onclick = arOpen;
 $('#vwM').onclick = onVwClick;
@@ -5921,13 +6209,10 @@ setTheme(theme);
     fit();  // příjemce má jinou obrazovku: celá mapa místo pohledu z exportu
   }
   const nas = !EMB && await nasFound();
+  if (nas) upLoad();
   if (nas && !OID) return obShow();
   if (!EMB) try { const s = await stLocal.get(); if (s) load(s.net, s.lay); } catch {}
-  if (!D.devices.length) {
-    const r = cv.getBoundingClientRect();
-    D.devices.push({id: 'internet1', t: 'internet', n: 'Internet'});
-    PT.internet1 = [g10(r.width / 2), 100];
-  }
+  if (!D.devices.length) inetAdd();
   fixPos();
   updDir();
   render();
@@ -5941,6 +6226,7 @@ setTheme(theme);
     $('#hT').textContent = '🗺️ ' + name;
     $('#bObjs').hidden = false;
     $('#bOut').hidden = false;
+    $('#bAcc').hidden = false;
     $('#bScan').hidden = !o?.nas;  // sken jen u objektu s NAS
     $('#bBk').hidden = false;
     try { await loadStore(); } catch (e) { saved = '⚠ ' + tr('NAS neodpovídá: {e}', {e: e.message}); }
