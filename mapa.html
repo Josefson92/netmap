@@ -1796,8 +1796,8 @@ function pvAll(d) {
 }
 // má zařízení VLAN nastavené na portech (skupinou nebo výjimkou)?
 const hasPv = d => !!(d.pvl || d.pg?.some(g => g.v && !noVl(g)));
-// datový spoj, kterým se dá VLAN zdědit (ne napájení ani Zigbee/Thread/Z-Wave/Bluetooth)
-const isVlL = l => !isPw(l.t) && !['zigbee', 'thread', 'zwave', 'bt'].includes(l.t);
+// datový spoj, kterým se dá VLAN zdědit (ne napájení ani USB/Zigbee/Thread/Z-Wave/Bluetooth)
+const isVlL = l => !isPw(l.t) && !['usb', 'zigbee', 'thread', 'zwave', 'bt'].includes(l.t);
 // switch nebo AP propouští i tagované sítě, koncové zařízení dostane jen netagovanou
 const isPass = d => ['switch', 'patch', 'ap', 'router'].includes(d.t);
 

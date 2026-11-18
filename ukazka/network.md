@@ -33,7 +33,7 @@ Zařízení: 45 · spojů: 45 · ─ kabel, ⇢ bezdrát, [id] typ "název"
          │  └⇢ Thread (Matter) → [th2] Senzor "Vlhkost koupelna" · místo:Přízemí › Koupelna
          ├─ Cat6 3→? → [srv1] Server / HA "Home Assistant" · ip:10.0.10.6 · model:Mini PC · místo:Suterén › Technická místnost · vlan≈Domácí
          ├─ Cat6a SFP2→SFP1 (10G) → [nas1] NAS "NAS" · ip:10.0.10.5 · model:4-bay NAS · místo:Suterén › Technická místnost · pozn:Nahrává kamery (NVR) a zálohuje počítače · porty:LAN · SFP+ 10G SFP1, LAN · 1G 1,2 · vlan≈Domácí
-         │  └─ USB → [ups1] UPS (záložní zdroj) "UPS rack" · výkon:1500 · výdrž min:25 · ip:10.0.10.4 · model:1500 VA, rack 2U · místo:Suterén › Technická místnost · pozn:Při výpadku proudu pošle NAS přes USB povel k vypnutí · vlan≈Domácí
+         │  └─ USB → [ups1] UPS (záložní zdroj) "UPS rack" · výkon:1500 · výdrž min:25 · ip:10.0.10.4 · model:1500 VA, rack 2U · místo:Suterén › Technická místnost · pozn:Při výpadku proudu pošle NAS přes USB povel k vypnutí
          ├─ Cat6 9→? → [cam1] Kamera "Kamera vjezd" · ip:10.0.30.11 · místo:Zahrada · vlan≈Kamery
          ├─ Cat6 10→? → [cam2] Kamera "Kamera zahrada" · ip:10.0.30.12 · místo:Zahrada · vlan≈Kamery
          └─ Cat6 11→? → [cam3] Kamera "Kamera terasa" · ip:10.0.30.13 · místo:Zahrada · vlan≈Kamery

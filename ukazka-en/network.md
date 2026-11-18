@@ -33,7 +33,7 @@ Devices: 45 · links: 45 · ─ cable, ⇢ wireless, [id] type "name"
          │  └⇢ Thread (Matter) → [th2] Sensor "Humidity bathroom" · location:Ground floor › Bathroom
          ├─ Cat6 3→? → [srv1] Server / HA "Home Assistant" · ip:10.0.10.6 · model:Mini PC · location:Basement › Utility room · vlan≈Home
          ├─ Cat6a SFP2→SFP1 (10G) → [nas1] NAS "NAS" · ip:10.0.10.5 · model:4-bay NAS · location:Basement › Utility room · note:Records the cameras (NVR) and backs up the computers · ports:LAN · SFP+ 10G SFP1, LAN · 1G 1,2 · vlan≈Home
-         │  └─ USB → [ups1] UPS (backup power) "UPS rack" · power:1500 · runtime min:25 · ip:10.0.10.4 · model:1500 VA, rack 2U · location:Basement › Utility room · note:On a power cut it tells the NAS over USB to shut down · vlan≈Home
+         │  └─ USB → [ups1] UPS (backup power) "UPS rack" · power:1500 · runtime min:25 · ip:10.0.10.4 · model:1500 VA, rack 2U · location:Basement › Utility room · note:On a power cut it tells the NAS over USB to shut down
          ├─ Cat6 9→? → [cam1] Camera "Camera driveway" · ip:10.0.30.11 · location:Garden · vlan≈Cameras
          ├─ Cat6 10→? → [cam2] Camera "Camera garden" · ip:10.0.30.12 · location:Garden · vlan≈Cameras
          └─ Cat6 11→? → [cam3] Camera "Camera terrace" · ip:10.0.30.13 · location:Garden · vlan≈Cameras
