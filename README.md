@@ -38,7 +38,7 @@ All you need is [`docker-compose.yml`](docker-compose.yml): the ready-made image
 
 Open `http://<server>:8780/` and create the account with the one-time code from the container log (`docker logs netmap`). An empty site and a demo site are created in the browser's language. See [`docs/nas.md`](docs/nas.md) (Czech).
 
-**Updates:** once a day the server checks GitHub for a new release and the editor shows a notice with a link to the release notes (`NETMAP_UPDATE_CHECK: 0` turns this off). Update with `docker compose pull && docker compose up -d` (Synology: Container Manager → Project → Stop, Build, Start); `data/` and `config/` are kept. To stay on one version, use `:1.0.0` instead of `:latest` in `docker-compose.yml`.
+**Updates:** once a day the server checks GitHub for a new release and the editor shows a notice with a link to the release notes (`NETMAP_UPDATE_CHECK: 0` turns this off). Update with `docker compose pull && docker compose up -d` (Synology: Container Manager → Project → Stop, Build, Start; `pull_policy: always` in `docker-compose.yml` makes Build fetch the new image); `data/` and `config/` are kept. To stay on one version, use `:1.0.0` instead of `:latest` in `docker-compose.yml`.
 
 ### License
 No license has been chosen yet, so all rights are reserved.
@@ -77,7 +77,7 @@ Stačí [`docker-compose.yml`](docker-compose.yml): hotový image `ghcr.io/josef
 
 Otevři `http://<server>:8780/` a založ účet s jednorázovým kódem z protokolu kontejneru (`docker logs netmap`). Server založí prázdný objekt a ukázkovou síť v jazyce prohlížeče. Podrobnosti jsou v [`docs/nas.md`](docs/nas.md).
 
-**Aktualizace:** server se 1× denně podívá na GitHub po novém vydání a editor ukáže upozornění s odkazem na poznámky k vydání (`NETMAP_UPDATE_CHECK: 0` to vypne). Aktualizace `docker compose pull && docker compose up -d` (Synology: Container Manager → Projekt → Zastavit, Sestavit, Spustit); `data/` a `config/` zůstanou. Kdo chce zůstat na jedné verzi, napíše v `docker-compose.yml` místo `:latest` třeba `:1.0.0`.
+**Aktualizace:** server se 1× denně podívá na GitHub po novém vydání a editor ukáže upozornění s odkazem na poznámky k vydání (`NETMAP_UPDATE_CHECK: 0` to vypne). Aktualizace `docker compose pull && docker compose up -d` (Synology: Container Manager → Projekt → Zastavit, Sestavit, Spustit; nový image stáhne díky `pull_policy: always` v `docker-compose.yml`); `data/` a `config/` zůstanou. Kdo chce zůstat na jedné verzi, napíše v `docker-compose.yml` místo `:latest` třeba `:1.0.0`.
 
 ### Licence
 Licence zatím není vybraná, všechna práva jsou vyhrazena.
