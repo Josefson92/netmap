@@ -9,10 +9,10 @@ Návod je psaný pro Synology (Container Manager), ale server je obyčejný Dock
 
 | Otázka | Volba | Proč |
 |---|---|---|
-| Backend | **Python + FastAPI** (uvicorn), jeden soubor `server/app.py` | Malý a čitelný kód, sken je stejně volání `nmap`. |
+| Backend | **Python + FastAPI** (uvicorn), balíček `server/netmap/` | Malý a čitelný kód, sken je stejně volání `nmap`. Moduly: `config`, `store`, `auth`, `objects`, `backups`, `scan`, `pages`, `api` (jediný s FastAPI) a `cli` (příkazy bez FastAPI). |
 | network.md | **generuje prohlížeč** (`md()`), server ho jen uloží | Logika zůstane na jednom místě. Server data nikdy sám nemění, takže md nemůže zastarat. |
 | Párování skenu | **v prohlížeči**, server vrací jen seznam nalezených | Porovnání potřebuje strom, VLANy a typy zařízení, a ty zná editor. |
-| Síť kontejneru | `network_mode: host` + `cap_add: NET_RAW, NET_ADMIN` | ARP sken funguje jen na vlastním L2 segmentu, z bridge sítě Dockeru by viděl jen sebe. |
+| Síť kontejneru | `network_mode: host` + `cap_add: NET_RAW` | ARP sken funguje jen na vlastním L2 segmentu, z bridge sítě Dockeru by viděl jen sebe. |
 | Přístup | jen z LAN/VPN, bez přesměrování portu z internetu, **přihlášení heslem**, 2FA (TOTP) volitelně | Data obsahují IP, MAC a firewall. Basic auth 2FA neumí, proto vlastní přihlašovací stránka a cookie. |
 
 ## Úložiště v editoru
@@ -27,7 +27,7 @@ Editor má tři úložiště se stejným rozhraním (`name`, `get() → {net, la
 
 Data jsou po objektech (dům, chata, kancelář…). Každý objekt má složku `data/<id>/` s vlastními soubory a zálohami. Editor bez `?o=` v adrese ukáže přehled objektů a objekt otevírá jako `mapa.html?o=<id>`. Data v prohlížeči (localStorage) má po objektech s příponou `@id`.
 
-Na prázdném serveru se při prvním otevření přehledu založí prázdný objekt „Domov“ (označený „tady je NAS“) a objekt „Ukázka“ s fiktivní sítí ze složky `ukazka/`. Pro anglický prohlížeč jsou to „Home“ a „Demo“ ze složky `ukazka-en/`. Ukázku jde kdykoli založit znovu příkazem `python app.py demo` (`demo cs` / `demo en`).
+Na prázdném serveru se při prvním otevření přehledu založí prázdný objekt „Domov“ (označený „tady je NAS“) a objekt „Ukázka“ s fiktivní sítí ze složky `ukazka/`. Pro anglický prohlížeč jsou to „Home“ a „Demo“ ze složky `ukazka-en/`. Ukázku jde kdykoli založit znovu příkazem `python -m netmap demo` (`demo cs` / `demo en`).
 
 ## Jazyk
 
@@ -52,41 +52,48 @@ Všechno je pod `/api/` a data se posílají jako text (stejné soubory jako ve 
 | DELETE | `/api/objects/{id}/backups/{bid}` | smazání zálohy |
 | POST | `/api/objects/{id}/scan` | spustí sken (jeden najednou), `202`; jen objekt s NAS, jinak `403` |
 | GET | `/api/objects/{id}/scan` | `{state: idle/running, at, hosts: [{ip, mac, name, vendor}]}` |
-| GET | `/api/health` | pro Docker healthcheck (jediné bez přihlášení) |
+| GET | `/api/health` | pro Docker healthcheck (bez přihlášení, stejně jako login, setup a logout) |
 | POST | `/api/login` | `{user, pass, code?}` → cookie `netmap_s`; `401` / `{need: 'code'}` |
+| POST | `/api/setup` | první účet: `{code, user, pass}` (kód z protokolu kontejneru) → cookie `netmap_s`; `401` špatný kód, `400` krátké heslo, `409` účet už je |
 | POST | `/api/logout` | smaže relaci |
 
 Cesty bez objektu (`/api/data`, `/api/backups…`, `/api/scan`) platí pro objekt označený „tady je NAS“.
 
-Statické soubory: `/` → `mapa.html` ze složky připojené jako volume. Nová verze editoru = přepsat soubor, bez přestavby image. `/docs` (OpenAPI) je vypnuté, aby nic nešlo bez přihlášení.
+Statické soubory: `/` → `www/mapa.html`, když je připojená, jinak editor z image. `/docs` (OpenAPI) je vypnuté, aby nic nešlo bez přihlášení.
 
 Server před zápisem zkontroluje, že `net` a `lay` jsou platný JSON (`net` má `devices`). Zapisuje atomicky (`*.tmp` a pak `os.replace`), takže výpadek uprostřed zápisu soubory nepoškodí.
 
 ## Přihlášení a 2FA
 
 - Bez platné relace vrací server místo `/` malou přihlašovací stránku a API odpovídá `401`.
-- Účet je jeden, uložený v `config/auth.json` (mimo `data/`, takže se nezálohuje spolu s mapou a nedostane se do exportu): `{user, hash, totp?}`. Heslo je hashované přes `hashlib.scrypt` se solí.
-- Nastavení se dělá z příkazové řádky kontejneru (Container Manager → Terminál, nebo `docker exec -it netmap …`):
-  - `python app.py passwd`: nastaví jméno a heslo (aspoň 10 znaků) a odhlásí všechny relace; dokud heslo není, server ukazuje jen nastavovací stránku;
-  - `python app.py 2fa on`: vygeneruje tajný klíč, vypíše `otpauth://` odkaz a QR kód pro aplikaci (Google Authenticator, Aegis, 1Password…). 2FA se zapne až po zadání prvního platného kódu;
-  - `python app.py 2fa off`: 2FA vypne;
-  - `python app.py demo`: založí objekt „Ukázka“ s fiktivní sítí.
+- Účet je jeden, uložený v `config/auth.json` (mimo `data/`, takže se nezálohuje spolu s mapou a nedostane se do exportu): `{user, hash, totp?}`. Heslo je hashované přes `hashlib.scrypt` se solí (N=2^15, r=8, p=3 podle OWASP; parametry jsou v hashi).
+- **První účet se zakládá v prohlížeči:** dokud účet není, server při startu vypíše do protokolu kontejneru jednorázový kód (`1234-5678-9012`) a místo editoru ukazuje formulář kód + jméno + heslo. Kdo stránku jen vidí v síti, účet bez kódu nezaloží; špatný kód se počítá jako špatné přihlášení. Po založení je uživatel rovnou přihlášený a kód přestane platit (nový vznikne až restartem bez účtu).
+- Další nastavení se dělá z příkazové řádky kontejneru (Container Manager → Terminál, nebo `docker exec -it netmap …`). Příkazy běží jako root, ale soubory zapisují pod stejným uživatelem jako server (vlastník složky `config/`):
+  - `python -m netmap passwd`: změní jméno a heslo (aspoň 10 znaků) a odhlásí všechny relace;
+  - `python -m netmap 2fa on`: vygeneruje tajný klíč, vypíše `otpauth://` odkaz a QR kód pro aplikaci (Google Authenticator, Aegis, 1Password…). 2FA se zapne až po zadání prvního platného kódu;
+  - `python -m netmap 2fa off`: 2FA vypne;
+  - `python -m netmap demo`: založí objekt „Ukázka“ s fiktivní sítí.
 - TOTP podle RFC 6238 (30 s, 6 číslic, tolerance ±1 krok), bez knihovny.
 - Relace: náhodný token v cookie `HttpOnly`, `SameSite=Strict` (a `Secure` za HTTPS), platnost 30 dní, přežije restart kontejneru (`config/sessions.json`).
-- Ochrana proti hádání: po 5 špatných pokusech z jedné IP čeká další pokus 1 minutu, s každou další chybou se čekání zdvojnásobí.
+- Přihlašovací formulář má vždy i pole pro kód 2FA a odpověď je jen „přihlášeno“ / „špatně“: nejde z ní poznat, jestli sedělo heslo, ani jestli je 2FA zapnuté.
+- Ochrana proti hádání: po 5 špatných pokusech z jedné IP čeká další pokus 1 minutu, s každou další chybou se čekání zdvojnásobí. Navíc platí celkový limit 30 chyb za minutu ze všech adres dohromady.
+- Změny (POST, PUT, PATCH, DELETE) přijímá server jen z vlastní stránky (`Sec-Fetch-Site`, starší prohlížeče `Origin`). Samotné `SameSite=Strict` nestačí, protože jiná aplikace na stejném NAS je pro prohlížeč týž „site“.
+- Velikost požadavku je omezená a tělo se čte po částech (přihlášení 4 kB, údaje objektu 1 MB, mapa 20 MB).
+- Hlavička `Content-Security-Policy`: stránka nenačte nic cizího a nemůže nic posílat jinam než na server.
 - Když relace vyprší, editor přesměruje na přihlášení. Neuložené změny jsou v localStorage a po přihlášení se uloží.
 
 ## Soubory na serveru
 
 ```
-netmap/
+netmap/          kopie repozitáře
   docker-compose.yml
-  server/        app.py, Dockerfile, requirements.txt
+  mapa.html      editor (je i v image)
+  server/        netmap/ (balíček), Dockerfile, entrypoint.sh, requirements.txt
   ukazka/        network.json, layout.json (ukázková síť pro objekt „Ukázka“)
   ukazka-en/     totéž anglicky (objekt „Demo“)
-  www/           mapa.html
-  config/        auth.json, sessions.json
-  data/
+  www/           volitelně vlastní mapa.html (má přednost před editorem z image)
+  config/        auth.json, sessions.json (vznikne sama)
+  data/          (vznikne sama)
     domov/       meta.json ({name, desc, nas}), network.json, layout.json, network.md
       backup/    2026-11-20_143005/{network.json, layout.json, network.md}
     ukazka/      … další objekty stejně
@@ -104,34 +111,38 @@ netmap/
 
 ## Docker
 
-- Image se staví z `server/Dockerfile` (základ `python:3.12-slim`, kontext je kořen repozitáře kvůli složkám `ukazka/` a `ukazka-en/`).
-- V image je `nmap`. Kontejner běží jako root kvůli raw socketům, jinak nic nepotřebuje.
+- **Hotový image** `ghcr.io/josefson92/netmap` (`latest` = poslední `main`, verze podle značek `v1.2.3`; x86-64 i ARM64) staví GitHub Actions (`.github/workflows/image.yml`) ve veřejném repozitáři. `docker-compose.yml` ho jen stáhne, na serveru tedy není potřeba nic dalšího než tento soubor.
+- Vlastní sestavení: `server/Dockerfile` (základ `python:3.12-slim`, kontext je kořen repozitáře kvůli `mapa.html`, `ukazka/` a `ukazka-en/`); v `docker-compose.yml` místo `image:` řádek `build:` z komentáře. Editor je součástí image; kdo chce jinou verzi bez nového image, připojí `./www:/app/www:ro` s vlastním `www/mapa.html`.
+- **Uživatel serveru se hledá sám.** Start (`server/entrypoint.sh`) běží chvíli jako root, vytvoří `data/` a `config/` a vyzkouší zápis postupně za: vlastníka složky `data/` (když to není root), `1000:1000` a `1000:101`. Na Synology rozhoduje o právech ACL sdílené složky, ne vlastník souboru, a skupina `administrators` (GID 101) v něm má zápis, proto tam vyjde `1000:101`. Když nesmí zapisovat nikdo (čerstvé složky po rootovi bez ACL), předá je prvnímu kandidátovi. Pak soubory s jiným vlastníkem předá vybranému uživateli a server spustí pod ním přes `setpriv` (bez skupin navíc a bez schopností); v protokolu je řádek `netmap: server runs as UID:GID`. `PUID`/`PGID` v compose volbu vynutí. Když zápis nejde vůbec, kontejner skončí s vysvětlením v protokolu.
+- V image je `nmap` se schopností `cap_net_raw` (setcap), server spouští `nmap --privileged`. Kontejner proto nemusí běžet jako root: kořenový souborový systém je jen ke čtení (`read_only`, `/tmp` v paměti) a z práv navíc má jen `NET_RAW`. `no-new-privileges` použít nejde, vypnul by nmapu `cap_net_raw`.
 - `network_mode: host`, port **8780** (nastavitelný `PORT`). Na Synology obsazuje DSM 5000/5001 a 80/443.
-- Volumes: `./www:/app/www:ro`, `./data:/app/data`, `./config:/app/config`.
-- Proměnné: `PORT`, `SCAN_NETS` (co skenovat, např. `192.168.1.0/24`; bez toho /24 hlavního rozhraní, víc než /22 server odmítne), `TZ`.
+- Volumes: `./data:/app/data`, `./config:/app/config`, volitelně `./www:/app/www:ro`.
+- Proměnné: `PORT`, `SCAN_NETS` (co skenovat, např. `192.168.1.0/24`; bez toho /24 hlavního rozhraní, víc než /22 server odmítne), `TZ`, `NETMAP_LANG`, volitelně `PUID`, `PGID`.
 - Reverzní proxy (na Synology `https://netmap.<nas>` s certifikátem) je **doporučená**: kvůli přihlášení, jinak by heslo a cookie šly po síti otevřeně.
 
 ## Nasazení na Synology
 
-1. **Složka:** na PC sestavit `netmap/` (struktura výše): `docker-compose.yml`, `server/`, `ukazka/` a `ukazka-en/` z repozitáře, `www/mapa.html`, prázdné `data/` a `config/`. V File Station otevřít sdílenou složku `docker` a složku `netmap` do ní přetáhnout. Kdo už má mapu ve složce `data/` z lokálního režimu, dá `network.json` a `layout.json` rovnou do `data/` a server je při prvním startu převede na objekt „Domov“.
-2. **Projekt:** Container Manager → Projekt → Vytvořit: název `netmap`, cesta `/docker/netmap`, zdroj „Použít existující docker-compose.yml“, portál Web Station nezapínat. Image se postaví na NAS (potřebuje internet, pár minut).
-3. **Heslo:** Container Manager → Kontejner → `netmap` → Podrobnosti → Terminál → Vytvořit ▾ → Spustit příkazem: `python app.py passwd`.
-4. **Firewall DSM** (jen když je zapnutý): povolit TCP 8780 z domácí sítě (a z VPN, pokud ji používáš).
-5. **Ověření:** `http://<adresa NAS>:8780/`, přihlásit se, otevřít objekt, něco posunout a ve File Station ověřit čas změny `data/<objekt>/layout.json`.
+Jen přes DSM, bez SSH a bez nahrávání souborů:
 
-**Aktualizace:** nový editor = v File Station přepsat `www/mapa.html` (stačí obnovit stránku). Změna serveru = přepsat soubory v `server/`, pak Projekt → `netmap` → Akce → Zastavit, Sestavit a Spustit.
+1. **Projekt:** Container Manager → Projekt → Vytvořit. Název `netmap`, cesta: v sdílené složce `docker` vytvořit složku `netmap` a vybrat ji. Zdroj „Vytvořit docker-compose.yml“ a vložit obsah [`docker-compose.yml`](../docker-compose.yml) (kdo chce, upraví `TZ` nebo `SCAN_NETS`, jinak nic). Portál Web Station nezapínat. Container Manager stáhne image a spustí ho.
+2. **Účet:** Container Manager → Kontejner → `netmap` → Protokol: opsat kód pro nastavení. Otevřít `http://<adresa NAS>:8780/`, zadat kód, jméno a heslo.
+3. **Firewall DSM** (jen když je zapnutý): povolit TCP 8780 z domácí sítě (a z VPN, pokud ji používáš).
 
-Jinde než na Synology: `docker compose up -d --build` ve složce `netmap/` a pak `docker exec -it netmap python app.py passwd`.
+Kdo už má mapu ve složce `data/` z lokálního režimu, dá `network.json` a `layout.json` do `netmap/data/` (File Station) a kontejner restartuje; server je převede na objekt „Domov“.
+
+**Aktualizace:** Container Manager → Projekt → `netmap` → Akce → Zastavit, pak Sestavit (stáhne nový image) a Spustit. `data/` a `config/` zůstanou.
+
+Jinde než na Synology: `docker-compose.yml` do prázdné složky, `docker compose up -d`, kód je v `docker logs netmap`. Aktualizace `docker compose pull && docker compose up -d`.
 
 ## Lokální test
 
 ```
 docker build -t netmap-test -f server/Dockerfile .
-docker run -d --name netmap-test -p 8782:8780 -v <www>:/app/www:ro -v <data>:/app/data -v <config>:/app/config netmap-test
-docker exec -it netmap-test python app.py passwd
+docker run -d --name netmap-test --cap-add NET_RAW --read-only --tmpfs /tmp -p 8782:8780 -v <data>:/app/data -v <config>:/app/config netmap-test
+docker logs netmap-test
 ```
 
-Pak `http://127.0.0.1:8782/`. Pro test nepoužívat skutečnou složku `data/`.
+Pak `http://127.0.0.1:8782/` a kód z protokolu. Pro test nepoužívat skutečnou složku `data/`.
 
 ## Sken sítě a porovnání s mapou
 

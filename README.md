@@ -34,14 +34,9 @@ It draws the network as a **topology**: a tree from the internet down to every d
 The editor saves three files: `network.json` (devices and links), `layout.json` (positions), and `network.md` (the generated text overview).
 
 ### Server
-`docker-compose.yml` with `server/` runs the editor on a NAS or any Linux box. On first start the server creates an empty site "Domov" and the demo site "Ukázka". See [`docs/nas.md`](docs/nas.md) (Czech).
+All you need is [`docker-compose.yml`](docker-compose.yml): the ready-made image `ghcr.io/josefson92/netmap` (x86-64 and ARM64) is downloaded automatically. Put the file into an empty folder and run `docker compose up -d` (Synology: Container Manager → Project → Create, paste the file's contents). Nothing needs to be edited: the folders `data/` and `config/` are created on first start and the server finds a user that can write to them by itself (also on Synology), so it never runs as root.
 
-```
-docker compose up -d --build
-docker exec -it netmap python app.py passwd
-```
-
-Then open `http://<server>:8780/`.
+Open `http://<server>:8780/` and create the account with the one-time code from the container log (`docker logs netmap`). An empty site and a demo site are created in the browser's language. See [`docs/nas.md`](docs/nas.md) (Czech).
 
 ### License
 No license has been chosen yet, so all rights are reserved.
@@ -76,14 +71,9 @@ Síť kreslí jako **topologii**: strom od internetu ke každému zařízení, s
 Editor ukládá tři soubory: `network.json` (zařízení a spoje), `layout.json` (pozice) a `network.md` (vygenerovaný textový přehled).
 
 ### Server
-`docker-compose.yml` se složkou `server/` spustí editor na NAS nebo libovolném Linuxu. Při prvním startu server založí prázdný objekt „Domov“ a objekt „Ukázka“ s ukázkovou sítí. Podrobnosti jsou v [`docs/nas.md`](docs/nas.md).
+Stačí [`docker-compose.yml`](docker-compose.yml): hotový image `ghcr.io/josefson92/netmap` (x86-64 i ARM64) se stáhne sám. Dej soubor do prázdné složky a spusť `docker compose up -d` (Synology: Container Manager → Projekt → Vytvořit, obsah souboru vložit). Nic se neupravuje: složky `data/` a `config/` vzniknou při prvním startu a server si sám najde uživatele, který do nich smí zapisovat (i na Synology), takže nikdy neběží jako root.
 
-```
-docker compose up -d --build
-docker exec -it netmap python app.py passwd
-```
-
-Pak otevři `http://<server>:8780/`.
+Otevři `http://<server>:8780/` a založ účet s jednorázovým kódem z protokolu kontejneru (`docker logs netmap`). Server založí prázdný objekt a ukázkovou síť v jazyce prohlížeče. Podrobnosti jsou v [`docs/nas.md`](docs/nas.md).
 
 ### Licence
 Licence zatím není vybraná, všechna práva jsou vyhrazena.

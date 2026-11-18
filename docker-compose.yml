@@ -1,20 +1,25 @@
-# Mapa domácí sítě na NAS (docs/nas.md).
-# Ve složce s tímto souborem leží server/, ukazka/, ukazka-en/, www/ (mapa.html), config/ a data/.
+# Mapa domácí sítě na NAS (docs/nas.md). Stačí tento jeden soubor: image se stáhne hotový
+# a složky data/ a config/ vzniknou vedle něj samy při prvním startu.
 services:
   netmap:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
+    image: ghcr.io/josefson92/netmap:latest
+    # vlastní sestavení z kopie repozitáře: místo image: dej
+    # build: {context: ., dockerfile: server/Dockerfile}
     container_name: netmap
     restart: unless-stopped
     network_mode: host          # kvůli ARP skenu (nmap vidí MAC jen ve vlastní síti); port je PORT níže
-    cap_add: [NET_RAW, NET_ADMIN]
+    cap_add: [NET_RAW]          # jen pro nmap (ARP), server sám žádná práva navíc nemá
+    read_only: true             # zapisuje se jen do data/ a config/
+    tmpfs: [/tmp]
+    # no-new-privileges tu záměrně není: vypnul by nmapu schopnost cap_net_raw a sken by neviděl MAC
     environment:
       PORT: 8780
       TZ: Europe/Prague
       # SCAN_NETS: 192.168.1.0/24   # co skenovat; bez toho síť serveru (/24)
       # NETMAP_LANG: cs             # jazyk příkazů v terminálu (passwd, 2fa, demo); bez toho angličtina
+      # PUID: 1000                  # uživatel serveru; bez toho ho start najde sám (kdo smí do data/ zapisovat)
+      # PGID: 1000
     volumes:
-      - ./www:/app/www:ro       # nová verze editoru = přepsat www/mapa.html, bez přestavby
       - ./data:/app/data
       - ./config:/app/config
+      # - ./www:/app/www:ro     # vlastní verze editoru (www/mapa.html) bez nového image
