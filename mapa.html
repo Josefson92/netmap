@@ -1285,6 +1285,7 @@ const EN = {
   "kontrola nových verzí je vypnutá": "update check is off",
   "je dostupná verze {v}": "version {v} is available",
   "je aktuální": "up to date",
+  "kontrola {t}": "checked {t}",
   "nové verze se ještě nekontrolovaly": "not checked for updates yet",
   "Verze serveru: {v}": "Server version: {v}",
 };
@@ -5419,7 +5420,8 @@ function upLine() {
     : upI.latest ? tr('je dostupná verze {v}', {v: upI.latest})
     : upI.at ? tr('je aktuální')
     : tr('nové verze se ještě nekontrolovaly');
-  return tr('Verze serveru: {v}', {v: upI.version}) + ' · ' + st;
+  const at = upI.at ? ' · ' + tr('kontrola {t}', {t: new Date(upI.at * 1000).toLocaleString(loc(), {day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'})}) : '';
+  return tr('Verze serveru: {v}', {v: upI.version}) + ' · ' + st + at;
 }
 // zjistí, jestli stránka běží ze serveru na NAS
 async function nasFound() {
