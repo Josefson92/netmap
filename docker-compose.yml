@@ -6,7 +6,6 @@ services:
     image: ghcr.io/josefson92/netmap:latest   # nebo připnutá verze, např. :1.0.0
     # vlastní sestavení z kopie repozitáře: místo image: dej
     # build: {context: ., dockerfile: server/Dockerfile}
-    pull_policy: always         # při každém Sestavit/up stáhne nejnovější image (aktualizace bez SSH)
     container_name: netmap
     restart: unless-stopped
     network_mode: host          # kvůli ARP skenu (nmap vidí MAC jen ve vlastní síti); port je PORT níže
